@@ -2,7 +2,25 @@
 
 import { useState } from "react";
 
+import Typewriter from "../components/typewriter";
 import startScreenBg from "../art/StartScreen.png";
+import introScreenBg from "../art/intro_screen.png";
+
+const INTRO_TEXT = `Welcome, City Planner.
+
+You have been given control of this growing city.
+Your decisions will shape how people live, how the economy grows, and how the environment changes.
+
+Every choice you make will affect the balance between development, sustainability, and the well-being of your citizens.
+
+Build too fast, and pollution may rise.
+Protect the environment too much, and your economy may struggle.
+Ignore your people, and happiness will fall.
+
+Your goal is to create a city that is strong, fair, and sustainable.
+
+Make your decisions carefully.
+The future of this city is in your hands.`;
 
 const decisionPool = [
   {
@@ -48,9 +66,11 @@ function getEnding(state: typeof initialState) {
   return "Balanced but Challenged City";
 }
 
+type Screen = "start" | "intro" | "game";
+
 export default function HomePage() {
   const [game, setGame] = useState(initialState);
-  const [started, setStarted] = useState(false);
+  const [screen, setScreen] = useState<Screen>("start");
   const [gameOver, setGameOver] = useState(false);
 
   const applyDecision = (decision: (typeof decisionPool)[0]) => {
@@ -76,10 +96,10 @@ export default function HomePage() {
   const resetGame = () => {
     setGame(initialState);
     setGameOver(false);
-    setStarted(true);
+    setScreen("game");
   };
 
-  if (!started) {
+  if (screen === "start") {
     return (
       <div
         className="start-screen"
@@ -90,9 +110,29 @@ export default function HomePage() {
           <button
             type="button"
             className="start-screen-btn"
-            onClick={() => setStarted(true)}
+            onClick={() => setScreen("intro")}
           >
             Start Game
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (screen === "intro") {
+    return (
+      <div
+        className="intro-screen"
+        style={{ backgroundImage: `url(${introScreenBg.src})` }}
+      >
+        <div className="intro-text-box">
+          <Typewriter text={INTRO_TEXT} speed={55} />
+          <button
+            type="button"
+            className="intro-continue"
+            onClick={() => setScreen("game")}
+          >
+            Continue
           </button>
         </div>
       </div>
