@@ -1,12 +1,12 @@
 export type SessionStatus = "active" | "completed" | "abandoned" | "lost";
 
-export interface Tile {
+export type Tile = {
   terrain: "plain" | "rock";
   zone: string | null;
   infrastructure: string | null;
-}
+};
 
-export interface SessionState {
+export type SessionState = {
   gridW: number;
   gridH: number;
   tiles: Tile[][];
@@ -16,66 +16,39 @@ export interface SessionState {
   windTurbinesBuilt: number;
   wasteManagementBuilt: number;
   bikeLanesBuilt: number;
-}
+};
 
-export interface SessionMetrics {
-  happiness: number;
-  envHealth: number;
-  economy: number;
-  carbonFootprint: number;
-  budget: number;
-  population: number;
-}
-
-export interface ProjectOption {
-  code: string;
-  label: string;
-  cost: number;
-  deltas: MetricsDelta;
-  rejectPenalty: Partial<MetricsDelta>;
-}
-
-export interface EventOption {
-  label: string;
-  deltas: MetricsDelta;
-  budgetDelta?: number;
-}
-
-export interface EventCard {
-  code: string;
-  title: string;
-  description: string;
-  options: EventOption[];
-}
-
-export interface MetricsDelta {
+export type MetricsDelta = {
   happiness?: number;
   envHealth?: number;
   economy?: number;
   carbonFootprint?: number;
   budget?: number;
   population?: number;
-}
+};
 
-export interface TurnAction {
-  category: "zone" | "infrastructure";
+export type Project = {
   code: string;
-  tileIndex: number;
-}
-
-export interface ProjectDecision {
-  code: string;
-  decision: "approve" | "reject";
-}
-
-export interface TurnDecisionRecord {
-  actionType: string;
-  detail: Record<string, unknown>;
-  delta: MetricsDelta;
+  label: string;
   cost: number;
-}
+  deltas: MetricsDelta;
+  rejectPenalty: Partial<MetricsDelta>;
+};
 
-export interface SessionRecord {
+export type EventOption = {
+  label: string;
+  deltas: MetricsDelta;
+  budgetDelta?: number;
+};
+
+export type EventCard = {
+  code: string;
+  title: string;
+  description: string;
+  options: EventOption[];
+};
+
+export type Session = {
   sessionId: string;
   playerId: string;
   cityName: string;
@@ -92,17 +65,23 @@ export interface SessionRecord {
   resultTier: string | null;
   lossReason: string | null;
   state: SessionState;
-  pendingProjects: ProjectOption[];
+  pendingProjects: Project[];
   pendingEvent: EventCard | null;
   startedAt: string;
   completedAt: string | null;
-}
+};
 
-export interface PlayerProfile {
+export type Player = {
   playerId: string;
   username: string;
   email: string;
   totalGames: number;
   bestScore: number;
-  achievements: string[];
-}
+};
+
+export type CatalogAction = {
+  code: string;
+  label: string;
+  cost: number;
+  deltas: MetricsDelta;
+};
