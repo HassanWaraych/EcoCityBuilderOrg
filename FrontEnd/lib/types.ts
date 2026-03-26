@@ -84,4 +84,27 @@ export type CatalogAction = {
   label: string;
   cost: number;
   deltas: MetricsDelta;
+  requires?: {
+    minRoads?: number;
+    minBikeLanes?: number;
+    minWaste?: number;
+    minTransit?: number;
+    minWater?: number;
+    minPopulation?: number;
+    description: string;
+  } | null;
+};
+
+export type Difficulty = "easy" | "normal" | "hard";
+
+export type LeaderboardEntry = {
+  rank: number;
+  sessionId: string;
+  cityName: string;
+  difficulty: Difficulty;
+  finalScore: number;
+  resultTier: string | null;
+  completedAt: string | null;
+  playerId: string;
+  username: string;
 };

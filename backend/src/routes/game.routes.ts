@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../auth.ts";
 import { pool } from "../db.ts";
 import {
+  DIFFICULTY_SETTINGS,
   MAX_TURNS,
   buildInitialState,
   drawEvent,
@@ -110,18 +111,14 @@ router.post("/sessions", async (req, res) => {
   }
 
   const state = buildInitialState();
+  const settings = DIFFICULTY_SETTINGS[parsed.data.difficulty];
+  const startingMetrics = settings.startingMetrics;
   const pendingProjects = drawProjects(Date.now());
   const pendingEvent = drawEvent(
     1,
-    {
-      happiness: 50,
-      envHealth: 70,
-      economy: 50,
-      carbonFootprint: 1000,
-      budget: 160000,
-      population: 10000,
-    },
+    startingMetrics,
     Date.now(),
+    parsed.data.difficulty,
   );
 
   const created = await pool.query(
@@ -131,14 +128,20 @@ router.post("/sessions", async (req, res) => {
       state_json, pending_projects, pending_event
     ) VALUES (
       $1, $2, $3, 1, 'active',
-      55, 72, 55, 900, 160000, 12000,
-      $4, $5, $6
+      $4, $5, $6, $7, $8, $9,
+      $10, $11, $12
     )
     RETURNING *`,
     [
       req.auth!.playerId,
       parsed.data.cityName,
       parsed.data.difficulty,
+      startingMetrics.happiness,
+      startingMetrics.envHealth,
+      startingMetrics.economy,
+      startingMetrics.carbonFootprint,
+      startingMetrics.budget,
+      startingMetrics.population,
       JSON.stringify(state),
       JSON.stringify(pendingProjects),
       pendingEvent ? JSON.stringify(pendingEvent) : null,

@@ -1,31 +1,71 @@
 # EcoCity Builder
 
-EcoCity Builder is a full-stack city-planning game with:
+EcoCityBuilder is a full-stack, turn-based urban planning simulation game built around UN SDG 11 (Sustainable Cities and Communities).
 
-- a Next.js frontend in `FrontEnd/`
-- a Node/Express backend in `backend/`
-- a PostgreSQL database started with Docker Compose
+Players manage a city across **15 turns**, balancing happiness, environmental health, economy, carbon footprint, budget, and population — while responding to random events and project proposals.
 
-## Requirements
+## Features
 
-- Node.js 22+ recommended
-- npm
-- Docker Desktop or Docker Engine with Compose
+- 🎮 **Turn-based gameplay** — queue up to 3 build actions, approve/reject proposals, respond to events
+- 📈 **Progression system** — 15-turn arc with Early / Mid / Late game phases and a turn progress bar
+- 🏆 **Scoring & tiers** — S through F tier based on final city metrics
+- 🎖️ **Achievements** — unlocked based on score reached
+- 🗂️ **Leaderboard** — compare runs by difficulty, with top-3 podium, rank medals, and player highlighting
+- 🔒 **Build prerequisites** — roads unlock waste/bikes/transit; bikes + roads unlock parks; full dependency tree
+- 📖 **Rules page** — full guide to objectives, build prerequisites, metrics, scoring, and strategy tips
+- 🌓 **Three difficulty levels** — Easy, Normal, Hard with different starting metrics and event frequencies
+
+## Tech Stack
+
+- **Frontend** — Next.js 15 (App Router), TypeScript, Vanilla CSS
+- **Backend** — Node.js, Express, TypeScript
+- **Database** — PostgreSQL (via Docker Compose)
 
 ## Project Structure
 
 ```text
 EcoCityBuilder/
-├── FrontEnd/   # Next.js app
-├── backend/    # Express API
-└── docker-compose.yml  # Postgres
+├── FrontEnd/               # Next.js app
+│   ├── app/
+│   │   ├── page.tsx        # Landing page
+│   │   ├── rules/          # How-to-play guide
+│   │   ├── dashboard/      # Player hub + session creation
+│   │   ├── leaderboard/    # Global leaderboard
+│   │   └── game/[sessionId]/
+│   │       ├── page.tsx    # Main game screen
+│   │       └── results/    # Post-game results
+│   ├── lib/
+│   │   ├── api.ts          # API client
+│   │   ├── auth.ts         # Token helpers
+│   │   ├── performance.ts  # Score tiers, achievement labels, tips
+│   │   └── types.ts        # Shared TypeScript types
+│   └── public/game-icons-png/  # Tile icon set
+├── backend/
+│   ├── src/
+│   │   ├── sim/engine.ts   # Game engine (zones, infra, events, scoring)
+│   │   ├── routes/         # Express route handlers
+│   │   ├── repo/           # Database queries
+│   │   └── types/          # Shared types
+│   └── sql/001_init.sql    # Schema migrations
+├── diagrams/               # Architecture diagrams
+└── docker-compose.yml      # PostgreSQL container
 ```
+
+## Requirements
+
+- Node.js 22+
+- npm
+- Docker Desktop (for the database)
 
 ## Environment Setup
 
-Create `backend/.env` from `backend/.env.example`.
+Copy the example env file:
 
-Example:
+```bash
+cp backend/.env.example backend/.env
+```
+
+Example values:
 
 ```env
 PORT=4000
@@ -35,62 +75,50 @@ BCRYPT_ROUNDS=12
 CORS_ORIGIN=http://localhost:3000
 ```
 
-The frontend uses `http://localhost:4000/api/v1` by default, so no frontend env file is required for local development.
-
 ## Install
 
-Install dependencies in both apps:
-
 ```bash
-cd backend
-npm install
-
-cd ../FrontEnd
-npm install
+cd backend && npm install
+cd ../FrontEnd && npm install
 ```
 
 ## Run Locally
 
-Start Postgres from the repo root:
+Start Postgres:
 
 ```bash
-cd /Users/lidmarka/Developer/EcoCityBuilder
 docker compose up -d db
 ```
 
 Start the backend:
 
 ```bash
-cd /Users/lidmarka/Developer/EcoCityBuilder/backend
-npm run dev
+cd backend && npm run dev
 ```
 
-Start the frontend in a second terminal:
+Start the frontend:
 
 ```bash
-cd /Users/lidmarka/Developer/EcoCityBuilder/FrontEnd
-npm run dev
+cd FrontEnd && npm run dev
 ```
 
-Open the app at:
-
-```text
-http://localhost:3000
-```
+Open the app at `http://localhost:3000`.
 
 ## Useful Endpoints
 
-- `GET /health`
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `GET /api/v1/game/catalog`
-- `POST /api/v1/game/sessions`
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/api/v1/auth/register` | Register player |
+| POST | `/api/v1/auth/login` | Log in |
+| GET | `/api/v1/game/catalog` | Zone + infra catalog |
+| POST | `/api/v1/game/sessions` | Create session |
+| POST | `/api/v1/game/sessions/:id/turn` | Resolve a turn |
+| GET | `/api/v1/game/leaderboard` | Global leaderboard |
 
 ## Verification
 
-These checks pass on the current repo:
-
 ```bash
 cd backend && npx tsc --noEmit -p tsconfig.json
-cd FrontEnd && npm run build
+cd FrontEnd && npx tsc --noEmit
 ```

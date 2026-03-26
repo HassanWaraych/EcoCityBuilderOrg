@@ -5,6 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchHistory, fetchSession } from "../../../../lib/api";
 import { getStoredPlayer } from "../../../../lib/auth";
+import {
+  difficultyLabel,
+  formatLossReason,
+  performanceBrief,
+  tierMedal,
+} from "../../../../lib/performance";
 import type { Session } from "../../../../lib/types";
 
 export default function ResultsPage() {
@@ -45,19 +51,48 @@ export default function ResultsPage() {
     return <main className="app-shell panel">Loading results...</main>;
   }
 
+  const brief = performanceBrief(session);
+  const medal = tierMedal(session.resultTier);
+  const hasTier = session.resultTier != null;
+
+  const METRIC_ICONS: Record<string, string> = {
+    Happiness: "😊",
+    "Environmental Health": "🌿",
+    Economy: "💰",
+  };
+
   return (
     <main className="app-shell stack">
       <section className="panel results-banner">
         <p className="small-kicker">Session results</p>
         <h1 className="route-title">{session.cityName}</h1>
         <p className="muted">
-          Status: {session.status}
-          {session.resultTier ? ` · ${session.resultTier}` : ""}
-          {session.lossReason ? ` · ${session.lossReason.replaceAll("_", " ")}` : ""}
+          {difficultyLabel(session.difficulty)} difficulty · {session.status}
+          {session.lossReason ? ` · ${formatLossReason(session.lossReason)}` : ""}
         </p>
-        <div className="inline-row">
-          <span className="pill">Final score: {session.finalScore ?? "Not awarded"}</span>
+
+        {/* Tier medal block */}
+        {hasTier && (
+          <div className={`tier-medal-block ${medal.className}`}>
+            <span className="tier-emoji">{medal.emoji}</span>
+            <div>
+              <div className="tier-label">{medal.label}</div>
+              <div className="tier-sublabel">Result tier</div>
+            </div>
+          </div>
+        )}
+
+        {/* Big score */}
+        {session.finalScore != null && (
+          <div style={{ marginBottom: 18 }}>
+            <p className="small-kicker" style={{ marginBottom: 6 }}>Final score</p>
+            <div className="final-score-big">{session.finalScore.toLocaleString()}</div>
+          </div>
+        )}
+
+        <div className="inline-row" style={{ marginBottom: 8 }}>
           <span className="pill">Turn reached: {session.currentTurn}</span>
+          {session.finalScore == null && <span className="pill">Score not awarded</span>}
         </div>
         <div className="cta-row" style={{ marginTop: 18 }}>
           {session.status === "active" && (
@@ -68,6 +103,34 @@ export default function ResultsPage() {
           <Link className="btn-secondary" href="/dashboard">
             Back to dashboard
           </Link>
+          <Link className="btn-ghost" href="/leaderboard">
+            Leaderboard
+          </Link>
+        </div>
+      </section>
+
+      <section className="dashboard-grid" style={{ gridTemplateColumns: "1.05fr 0.95fr" }}>
+        <div className="table-card stack">
+          <div>
+            <p className="small-kicker">Performance feedback</p>
+            <h2 className="section-title">{brief.headline}</h2>
+          </div>
+          <p className="muted">{brief.summary}</p>
+          <p className="muted">{brief.recommendation}</p>
+        </div>
+        <div className="table-card stack">
+          <h2 className="section-title">Improvement tips</h2>
+          <div className="tip-grid">
+            {brief.tips.map((t) => (
+              <div className="tip-card" key={t.label}>
+                <span className="tip-icon">{METRIC_ICONS[t.label] ?? "💡"}</span>
+                <div>
+                  <div className="tip-label">{t.label}</div>
+                  <div className="tip-text">{t.tip}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -78,6 +141,21 @@ export default function ResultsPage() {
         <Metric label="Carbon" value={session.carbonFootprint} />
         <Metric label="Budget" value={session.budget} />
         <Metric label="Population" value={session.population} />
+      </section>
+
+      <section className="dashboard-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+        <div className="brief-card">
+          <strong>Strongest area</strong>
+          <p className="muted">
+            {brief.strongest.label}: {brief.strongest.value}
+          </p>
+        </div>
+        <div className="brief-card">
+          <strong>Weakest area</strong>
+          <p className="muted">
+            {brief.weakest.label}: {brief.weakest.value}
+          </p>
+        </div>
       </section>
 
       <section className="table-card">
@@ -118,20 +196,13 @@ function Metric({ label, value }: { label: string; value: number }) {
 
 function friendlyActionName(actionType: string) {
   switch (actionType) {
-    case "passive":
-      return "Passive update";
-    case "project_approve":
-      return "Project approved";
-    case "project_reject":
-      return "Project rejected";
-    case "event_response":
-      return "Event response";
-    case "infrastructure":
-      return "Infrastructure built";
-    case "zone":
-      return "Zone built";
-    default:
-      return actionType.replaceAll("_", " ");
+    case "passive": return "Passive update";
+    case "project_approve": return "Project approved";
+    case "project_reject": return "Project rejected";
+    case "event_response": return "Event response";
+    case "infrastructure": return "Infrastructure built";
+    case "zone": return "Zone built";
+    default: return actionType.replaceAll("_", " ");
   }
 }
 
@@ -152,21 +223,15 @@ function friendlyActionDetail(actionType: string, detail: Record<string, unknown
     case "project_reject":
       return label ? `You rejected ${label}.` : "You rejected a project.";
     case "event_response":
-      if (response && eventCode) {
-        return `For ${friendlyEventName(eventCode)}, you chose "${response}".`;
-      }
+      if (response && eventCode) return `For ${friendlyEventName(eventCode)}, you chose "${response}".`;
       if (response) return `You chose "${response}" for the event.`;
       return "You responded to an event.";
     case "infrastructure":
-      if (label && tileIndex != null) {
-        return `Built ${label} on tile ${tileIndex + 1}.`;
-      }
+      if (label && tileIndex != null) return `Built ${label} on tile ${tileIndex + 1}.`;
       if (label) return `Built ${label}.`;
       return "Built infrastructure.";
     case "zone":
-      if (label && tileIndex != null) {
-        return `Placed ${label} on tile ${tileIndex + 1}.`;
-      }
+      if (label && tileIndex != null) return `Placed ${label} on tile ${tileIndex + 1}.`;
       if (label) return `Placed ${label}.`;
       return "Placed a zone.";
     default:

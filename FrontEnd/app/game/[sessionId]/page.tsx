@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchCatalog, fetchSession, submitTurn } from "../../../lib/api";
 import { getStoredPlayer } from "../../../lib/auth";
+import { difficultyLabel, difficultyNote } from "../../../lib/performance";
 import type { CatalogAction, Session, Tile } from "../../../lib/types";
 
 type Catalog = {
   zones: CatalogAction[];
   infrastructure: CatalogAction[];
 };
+
+type ToastDelta = { label: string; value: number };
 
 export default function GamePage() {
   const params = useParams<{ sessionId: string }>();
@@ -27,6 +30,9 @@ export default function GamePage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [toastDeltas, setToastDeltas] = useState<ToastDelta[]>([]);
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!getStoredPlayer()) {
@@ -51,6 +57,26 @@ export default function GamePage() {
       })
       .finally(() => setLoading(false));
   }, [params.sessionId, router]);
+
+  function showToast(prev: Session, next: Session) {
+    const keys: (keyof Session)[] = ["happiness", "envHealth", "economy", "carbonFootprint", "budget", "population"];
+    const labels: Record<string, string> = {
+      happiness: "😊 Happiness",
+      envHealth: "🌿 Env",
+      economy: "💰 Economy",
+      carbonFootprint: "☁️ Carbon",
+      budget: "🏦 Budget",
+      population: "👥 Pop",
+    };
+    const deltas: ToastDelta[] = keys
+      .map((k) => ({ label: labels[k]!, value: (next[k] as number) - (prev[k] as number) }))
+      .filter((d) => d.value !== 0);
+    if (deltas.length === 0) return;
+    setToastDeltas(deltas);
+    setToastVisible(true);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 4500);
+  }
 
   function queueAction(category: "zone" | "infrastructure", code: string) {
     if (selectedTile == null) {
@@ -87,6 +113,7 @@ export default function GamePage() {
         })),
         ...(session.pendingEvent ? { eventResponseIndex } : {}),
       });
+      showToast(session, result.session);
       setSession(result.session);
       setQueuedActions([]);
       setProjectDecisions({});
@@ -107,12 +134,34 @@ export default function GamePage() {
     return <main className="app-shell panel">Loading session...</main>;
   }
 
+  const turnPct = Math.min(100, ((session.currentTurn - 1) / 15) * 100);
+  const budgetOk = session.budget > 0;
+  const metricsOk = session.happiness > 0 && session.envHealth > 0 && session.economy > 0;
+  const completed = session.status !== "active";
+
   return (
     <main className="app-shell">
+      {/* Turn progress bar */}
+      <div className="turn-progress-wrap">
+        <div className="turn-progress-header">
+          <span className="small-kicker">Turn {session.currentTurn} of 15</span>
+          <span className="muted" style={{ fontSize: "0.85rem" }}>
+            {session.currentTurn <= 5 ? "🌱 Early game" : session.currentTurn <= 10 ? "⚡ Mid game" : "🔥 Late game"}
+          </span>
+        </div>
+        <div className="turn-progress-track">
+          <div className="turn-progress-fill" style={{ width: `${turnPct}%` }} />
+        </div>
+      </div>
+
       <div className="split" style={{ marginBottom: 18 }}>
         <div>
-          <p className="small-kicker">Turn {session.currentTurn} of 15</p>
           <h1 className="route-title">{session.cityName}</h1>
+          <p className="muted">
+            <span className={`difficulty-chip difficulty-${session.difficulty}`}>{difficultyLabel(session.difficulty)}</span>
+            {" "}
+            {difficultyNote(session.difficulty)}
+          </p>
         </div>
         <div className="inline-row">
           <Link className="btn-ghost" href="/dashboard">
@@ -124,13 +173,14 @@ export default function GamePage() {
         </div>
       </div>
 
+      {/* HUD — metric bars */}
       <section className="hud">
-        <Metric label="Happiness" value={session.happiness} />
-        <Metric label="Env Health" value={session.envHealth} />
-        <Metric label="Economy" value={session.economy} />
-        <Metric label="Carbon" value={session.carbonFootprint} />
-        <Metric label="Budget" value={session.budget} />
-        <Metric label="Population" value={session.population} />
+        <HudMetric label="Happiness" value={session.happiness} icon="😊" />
+        <HudMetric label="Env Health" value={session.envHealth} icon="🌿" />
+        <HudMetric label="Economy" value={session.economy} icon="💰" />
+        <HudMetric label="Carbon" value={session.carbonFootprint} icon="☁️" isInverse />
+        <HudMetric label="Budget" value={session.budget} icon="🏦" isMoney />
+        <HudMetric label="Population" value={session.population} icon="👥" isMoney />
       </section>
 
       <section className="game-grid">
@@ -139,11 +189,14 @@ export default function GamePage() {
             <div className="split">
               <div>
                 <h2 className="section-title">City grid</h2>
-                <p className="muted">Select a tile, queue up to three build actions, then resolve the turn.</p>
+                <p className="muted">Select a tile, queue up to three build actions, answer both proposals, and survive all 15 turns.</p>
               </div>
               <span className="pill">Queued {queuedActions.length}/3</span>
             </div>
-            <div className="city-grid">
+            <div
+              className="city-grid"
+              style={{ gridTemplateColumns: `repeat(${session.state.gridW}, minmax(0, 1fr))` }}
+            >
               {session.state.tiles.flat().map((tile, index) => {
                 const previewTile = tileWithQueuedAction(tile, index, queuedActions);
                 const art = tileArt(previewTile.zone, previewTile.infrastructure, previewTile.terrain);
@@ -222,6 +275,28 @@ export default function GamePage() {
         </div>
 
         <aside className="sidebar-card">
+          {/* Objectives panel */}
+          <section className="stack">
+            <h2 className="section-title">Objectives</h2>
+            <div className="objectives-panel">
+              <ObjectiveItem
+                done={budgetOk}
+                failed={!budgetOk}
+                label="Keep budget above zero"
+              />
+              <ObjectiveItem
+                done={metricsOk}
+                failed={!metricsOk}
+                label="All core metrics above zero"
+              />
+              <ObjectiveItem
+                done={completed}
+                failed={false}
+                label="Survive all 15 turns"
+              />
+            </div>
+          </section>
+
           <section className="stack">
             <div className="split">
               <h2 className="section-title">Zones</h2>
@@ -240,6 +315,11 @@ export default function GamePage() {
                     </div>
                   </div>
                   <p className="muted">{formatDelta(zone.deltas)}</p>
+                  {zone.requires && (
+                    <p style={{ fontSize: "0.78rem", color: "#f08963", marginTop: 4 }}>
+                      🔒 {zone.requires.description}
+                    </p>
+                  )}
                 </button>
               ))}
             </div>
@@ -265,6 +345,11 @@ export default function GamePage() {
                     </div>
                   </div>
                   <p className="muted">{formatDelta(item.deltas)}</p>
+                  {item.requires && (
+                    <p style={{ fontSize: "0.78rem", color: "#f08963", marginTop: 4 }}>
+                      🔒 {item.requires.description}
+                    </p>
+                  )}
                 </button>
               ))}
             </div>
@@ -345,15 +430,63 @@ export default function GamePage() {
           </button>
         </aside>
       </section>
+
+      {/* Turn toast */}
+      <div className={`turn-toast ${toastVisible ? "toast-visible" : ""}`}>
+        <span style={{ fontSize: "1.2rem" }}>📊</span>
+        <div className="toast-delta">
+          {toastDeltas.map((d) => (
+            <span
+              key={d.label}
+              className={`toast-delta-item ${d.value > 0 ? "pos" : d.value < 0 ? "neg" : "neu"}`}
+            >
+              {d.label} {d.value > 0 ? "+" : ""}{d.value}
+            </span>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function HudMetric({
+  label,
+  value,
+  icon,
+  isInverse = false,
+  isMoney = false,
+}: {
+  label: string;
+  value: number;
+  icon: string;
+  isInverse?: boolean;
+  isMoney?: boolean;
+}) {
+  const pct = isMoney ? Math.min(100, Math.max(0, (value / 50000) * 100)) : Math.min(100, Math.max(0, value));
+  const effectivePct = isInverse ? 100 - pct : pct;
+  const barClass =
+    effectivePct >= 60 ? "bar-green" : effectivePct >= 30 ? "bar-amber" : "bar-red";
+
   return (
-    <div className="metric-card">
-      <span className="small-kicker">{label}</span>
-      <strong>{typeof value === "number" ? value.toLocaleString() : value}</strong>
+    <div className="metric-card hud-metric">
+      <div className="hud-metric-header">
+        <span className="small-kicker">{icon} {label}</span>
+      </div>
+      <div className="hud-metric-value">{typeof value === "number" ? value.toLocaleString() : value}</div>
+      <div className="metric-bar-track">
+        <div className={`metric-bar-fill ${barClass}`} style={{ width: `${effectivePct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ObjectiveItem({ done, failed, label }: { done: boolean; failed: boolean; label: string }) {
+  const cls = done ? "obj-done" : failed ? "obj-failed" : "";
+  const icon = done ? "✅" : failed ? "❌" : "⭕";
+  return (
+    <div className={`objective-item ${cls}`}>
+      <span className="objective-icon">{icon}</span>
+      <span className="objective-label">{label}</span>
     </div>
   );
 }

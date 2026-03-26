@@ -6,6 +6,39 @@ const router = Router();
 
 router.use(requireAuth);
 
+router.get("/leaderboard", async (_req, res) => {
+  const result = await pool.query(
+    `SELECT
+        gs.session_id,
+        gs.city_name,
+        gs.difficulty,
+        gs.final_score,
+        gs.result_tier,
+        gs.completed_at,
+        p.player_id,
+        p.username
+     FROM game_sessions gs
+     JOIN players p ON p.player_id = gs.player_id
+     WHERE gs.final_score IS NOT NULL
+     ORDER BY gs.final_score DESC, gs.completed_at ASC
+     LIMIT 20`,
+  );
+
+  res.json({
+    leaderboard: result.rows.map((row, index) => ({
+      rank: index + 1,
+      sessionId: row.session_id,
+      cityName: row.city_name,
+      difficulty: row.difficulty,
+      finalScore: row.final_score,
+      resultTier: row.result_tier,
+      completedAt: row.completed_at,
+      playerId: row.player_id,
+      username: row.username,
+    })),
+  });
+});
+
 router.get("/:id/profile", async (req, res) => {
   if (req.params.id !== req.auth!.playerId) {
     res.status(403).json({ error: "Forbidden" });

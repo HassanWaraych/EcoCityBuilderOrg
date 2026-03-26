@@ -11,11 +11,22 @@ import type {
   TurnDecisionRecord,
 } from "../types/index.ts";
 
+type BuildRequirement = {
+  minRoads?: number;
+  minBikeLanes?: number;
+  minWaste?: number;
+  minTransit?: number;
+  minWater?: number;
+  minPopulation?: number;
+  description: string;
+};
+
 type ZoneDef = {
   label: string;
   cost: number;
   deltas: MetricsDelta;
   populationCap: number;
+  requires?: BuildRequirement;
 };
 
 type InfrastructureDef = {
@@ -23,6 +34,7 @@ type InfrastructureDef = {
   cost: number;
   deltas: MetricsDelta;
   maxCount?: number;
+  requires?: BuildRequirement;
 };
 
 type EventDef = {
@@ -33,9 +45,63 @@ type EventDef = {
   options: EventCard["options"];
 };
 
+export type Difficulty = "easy" | "normal" | "hard";
+
+type DifficultySettings = {
+  startingMetrics: SessionMetrics;
+  baseTurnGrant: number;
+  taxRate: number;
+  eventStartTurn: number;
+  eventChance: number;
+};
+
 export const MAX_TURNS = 15;
 export const MAX_ACTIONS_PER_TURN = 3;
-const BASE_TURN_GRANT = 12000;
+
+export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
+  easy: {
+    startingMetrics: {
+      happiness: 62,
+      envHealth: 78,
+      economy: 60,
+      carbonFootprint: 780,
+      budget: 165000,
+      population: 13000,
+    },
+    baseTurnGrant: 7000,
+    taxRate: 0.0048,
+    eventStartTurn: 4,
+    eventChance: 0.3,
+  },
+  normal: {
+    startingMetrics: {
+      happiness: 55,
+      envHealth: 72,
+      economy: 55,
+      carbonFootprint: 900,
+      budget: 135000,
+      population: 12000,
+    },
+    baseTurnGrant: 5500,
+    taxRate: 0.0044,
+    eventStartTurn: 3,
+    eventChance: 0.45,
+  },
+  hard: {
+    startingMetrics: {
+      happiness: 48,
+      envHealth: 66,
+      economy: 49,
+      carbonFootprint: 1100,
+      budget: 105000,
+      population: 11000,
+    },
+    baseTurnGrant: 4000,
+    taxRate: 0.0038,
+    eventStartTurn: 2,
+    eventChance: 0.6,
+  },
+};
 
 export const ZONES: Record<string, ZoneDef> = {
   residential: {
@@ -49,30 +115,52 @@ export const ZONES: Record<string, ZoneDef> = {
     cost: 9000,
     deltas: { happiness: 3, envHealth: -3, economy: 10, carbonFootprint: 55, population: 300 },
     populationCap: 100,
+    requires: {
+      minRoads: 2,
+      description: "Needs 2 road networks for customer access",
+    },
   },
   industrial: {
     label: "Industrial",
     cost: 12000,
     deltas: { happiness: -2, envHealth: -7, economy: 14, carbonFootprint: 110, population: 200 },
     populationCap: 50,
+    requires: {
+      minRoads: 2,
+      minWaste: 1,
+      description: "Needs 2 roads + 1 waste management facility",
+    },
   },
   green_space: {
     label: "Green Space",
     cost: 3500,
     deltas: { happiness: 9, envHealth: 13, economy: 0, carbonFootprint: -70, population: 150 },
     populationCap: 0,
+    requires: {
+      minRoads: 1,
+      minBikeLanes: 1,
+      description: "Needs 1 road + 1 bike lane for park access",
+    },
   },
   mixed_use: {
     label: "Mixed Use",
     cost: 14000,
     deltas: { happiness: 7, envHealth: -2, economy: 12, carbonFootprint: 35, population: 900 },
     populationCap: 300,
+    requires: {
+      minRoads: 2,
+      description: "Dense mixed-use development needs 2 road networks",
+    },
   },
   solar_farm: {
     label: "Solar Farm",
     cost: 15000,
     deltas: { happiness: 4, envHealth: 12, economy: 7, carbonFootprint: -260 },
     populationCap: 0,
+    requires: {
+      minRoads: 1,
+      description: "Needs 1 road for grid connection and maintenance access",
+    },
   },
 };
 
@@ -86,27 +174,48 @@ export const INFRASTRUCTURE: Record<string, InfrastructureDef> = {
     label: "Public Transit",
     cost: 18000,
     deltas: { happiness: 12, envHealth: 7, carbonFootprint: -380, population: 400 },
+    requires: {
+      minRoads: 2,
+      description: "Transit system needs 2 road networks as its foundation",
+    },
   },
   water_treatment: {
     label: "Water Treatment Plant",
     cost: 13000,
     deltas: { happiness: 7, envHealth: 10, carbonFootprint: 25, population: 500 },
+    requires: {
+      minRoads: 1,
+      minPopulation: 25000,
+      description: "Unlocks at 1 road + population over 25,000",
+    },
   },
   wind_turbine: {
     label: "Wind Turbine",
     cost: 15000,
     deltas: { happiness: 4, envHealth: 14, carbonFootprint: -320 },
     maxCount: 3,
+    requires: {
+      minRoads: 1,
+      description: "Needs 1 road for equipment access (max 3 total)",
+    },
   },
   waste_management: {
     label: "Waste Management",
     cost: 10000,
     deltas: { happiness: 6, envHealth: 12, carbonFootprint: -120 },
+    requires: {
+      minRoads: 1,
+      description: "Needs 1 road for collection routes",
+    },
   },
   bike_lane: {
     label: "Bike Lane Network",
     cost: 5000,
     deltas: { happiness: 8, envHealth: 5, carbonFootprint: -150, population: 250 },
+    requires: {
+      minRoads: 1,
+      description: "Bike lanes must connect to an existing road network",
+    },
   },
 };
 
@@ -223,17 +332,17 @@ export function clampMetric(value: number): number {
 }
 
 export function buildInitialState(): SessionState {
-  const gridW = 10;
-  const gridH = 10;
+  const gridW = 8;
+  const gridH = 8;
   const tiles: Tile[][] = Array.from({ length: gridH }, () =>
     Array.from({ length: gridW }, () => ({ terrain: "plain", zone: null, infrastructure: null })),
   );
   const rocks = [
     [1, 1],
-    [2, 7],
+    [2, 6],
     [5, 3],
-    [7, 8],
-    [8, 2],
+    [6, 6],
+    [6, 2],
   ];
   for (const [row, col] of rocks) {
     tiles[row][col] = { terrain: "rock", zone: null, infrastructure: null };
@@ -258,9 +367,21 @@ export function drawProjects(seed: number): ProjectOption[] {
   return first.code === second.code ? [first, PROJECTS[(seed + 1) % PROJECTS.length]] : [first, second];
 }
 
-export function drawEvent(turn: number, metrics: SessionMetrics, seed: number): EventCard | null {
-  if (turn < 3) return null;
-  if (seed % 10 >= 3) return null;
+function getDifficultySettings(difficulty: string): DifficultySettings {
+  return DIFFICULTY_SETTINGS[(difficulty as Difficulty) in DIFFICULTY_SETTINGS ? (difficulty as Difficulty) : "normal"];
+}
+
+export function drawEvent(
+  turn: number,
+  metrics: SessionMetrics,
+  seed: number,
+  difficulty: string = "normal",
+): EventCard | null {
+  const settings = getDifficultySettings(difficulty);
+  if (turn < settings.eventStartTurn) return null;
+
+  const roll = (seed % 100) / 100;
+  if (roll >= settings.eventChance) return null;
 
   const eligible = EVENTS.filter((event) => event.eligible(metrics));
   if (eligible.length === 0) return null;
@@ -326,8 +447,22 @@ export function summarizeMetrics(session: SessionRecord): SessionMetrics {
 
 export function listCatalog() {
   return {
-    zones: Object.entries(ZONES).map(([code, def]) => ({ code, ...def })),
-    infrastructure: Object.entries(INFRASTRUCTURE).map(([code, def]) => ({ code, ...def })),
+    zones: Object.entries(ZONES).map(([code, def]) => ({
+      code,
+      label: def.label,
+      cost: def.cost,
+      deltas: def.deltas,
+      populationCap: def.populationCap,
+      requires: def.requires ?? null,
+    })),
+    infrastructure: Object.entries(INFRASTRUCTURE).map(([code, def]) => ({
+      code,
+      label: def.label,
+      cost: def.cost,
+      deltas: def.deltas,
+      maxCount: def.maxCount ?? null,
+      requires: def.requires ?? null,
+    })),
     projects: PROJECTS,
   };
 }
@@ -340,15 +475,60 @@ function getTile(state: SessionState, tileIndex: number): { row: number; col: nu
   return { row, col, tile: state.tiles[row][col] };
 }
 
-function requireRoadsFor(code: string): boolean {
-  return code === "commercial" || code === "industrial" || code === "bike_lane";
+function checkBuildRequirements(
+  label: string,
+  requires: BuildRequirement | undefined,
+  state: SessionState,
+  metrics: SessionMetrics,
+): void {
+  if (!requires) return;
+
+  if (requires.minRoads && state.roadsBuilt < requires.minRoads) {
+    const needed = requires.minRoads - state.roadsBuilt;
+    throw new Error(
+      label + " needs " + requires.minRoads + " road network" + (requires.minRoads > 1 ? "s" : "") +
+      " (build " + needed + " more road" + (needed > 1 ? "s" : "") + " first)"
+    );
+  }
+  if (requires.minBikeLanes && state.bikeLanesBuilt < requires.minBikeLanes) {
+    const needed = requires.minBikeLanes - state.bikeLanesBuilt;
+    throw new Error(
+      label + " needs " + requires.minBikeLanes + " bike lane network" + (requires.minBikeLanes > 1 ? "s" : "") +
+      " (build " + needed + " more first)"
+    );
+  }
+  if (requires.minWaste && state.wasteManagementBuilt < requires.minWaste) {
+    throw new Error(
+      label + " needs " + requires.minWaste + " waste management facilit" + (requires.minWaste > 1 ? "ies" : "y") + " first"
+    );
+  }
+  if (requires.minTransit && state.transitBuilt < requires.minTransit) {
+    throw new Error(
+      label + " needs " + requires.minTransit + " public transit line" + (requires.minTransit > 1 ? "s" : "") + " first"
+    );
+  }
+  if (requires.minWater && state.waterPlantsBuilt < requires.minWater) {
+    throw new Error(
+      label + " needs " + requires.minWater + " water treatment plant" + (requires.minWater > 1 ? "s" : "") + " first"
+    );
+  }
+  if (requires.minPopulation && metrics.population < requires.minPopulation) {
+    throw new Error(
+      label + " unlocks once population exceeds " + requires.minPopulation.toLocaleString() +
+      " (currently " + metrics.population.toLocaleString() + ")"
+    );
+  }
 }
 
-function applyPassiveTurn(metrics: SessionMetrics): { nextMetrics: SessionMetrics; delta: MetricsDelta } {
+function applyPassiveTurn(
+  metrics: SessionMetrics,
+  difficulty: string,
+): { nextMetrics: SessionMetrics; delta: MetricsDelta } {
+  const settings = getDifficultySettings(difficulty);
   const delta: MetricsDelta = {};
 
-  const taxIncome = Math.floor(metrics.population * 0.006);
-  delta.budget = (delta.budget ?? 0) + BASE_TURN_GRANT + taxIncome;
+  const taxIncome = Math.floor(metrics.population * settings.taxRate);
+  delta.budget = (delta.budget ?? 0) + settings.baseTurnGrant + taxIncome;
 
   if (metrics.happiness >= 60) {
     const growth = Math.max(250, Math.floor(metrics.population * 0.05));
@@ -388,9 +568,7 @@ function applyAction(
     const def = ZONES[action.code];
     if (!def) throw new Error("Unknown zone action");
     if (metrics.budget < def.cost) throw new Error("Insufficient budget");
-    if (requireRoadsFor(action.code) && state.roadsBuilt === 0) {
-      throw new Error("Roads are required before this build");
-    }
+    checkBuildRequirements(def.label, def.requires, state, metrics);
     if (target.tile.zone || target.tile.infrastructure) {
       throw new Error("Select an empty buildable tile");
     }
@@ -412,14 +590,9 @@ function applyAction(
   const def = INFRASTRUCTURE[action.code];
   if (!def) throw new Error("Unknown infrastructure action");
   if (metrics.budget < def.cost) throw new Error("Insufficient budget");
-  if (action.code === "bike_lane" && state.roadsBuilt === 0) {
-    throw new Error("Bike lanes require roads");
-  }
-  if (action.code === "water_treatment" && metrics.population <= 25000) {
-    throw new Error("Water treatment unlocks once population exceeds 25,000");
-  }
-  if (def.maxCount && action.code === "wind_turbine" && state.windTurbinesBuilt >= def.maxCount) {
-    throw new Error("Wind turbine cap reached");
+  checkBuildRequirements(def.label, def.requires, state, metrics);
+  if (def.maxCount && state.windTurbinesBuilt >= def.maxCount && action.code === "wind_turbine") {
+    throw new Error("Wind turbine cap reached (max 3)");
   }
   if (target.tile.infrastructure) {
     throw new Error("Select a tile without infrastructure");
@@ -562,7 +735,7 @@ export function resolveTurn(
   let metrics = summarizeMetrics(session);
   const records: TurnDecisionRecord[] = [];
 
-  const passive = applyPassiveTurn(metrics);
+  const passive = applyPassiveTurn(metrics, session.difficulty);
   metrics = passive.nextMetrics;
   records.push({ actionType: "passive", detail: { turn: session.currentTurn }, delta: passive.delta, cost: 0 });
 
@@ -593,7 +766,9 @@ export function resolveTurn(
   const nextTurn = status === "active" ? session.currentTurn + 1 : session.currentTurn;
   const pendingProjects = status === "active" ? drawProjects(nextTurn + metrics.population) : [];
   const pendingEvent =
-    status === "active" ? drawEvent(nextTurn, metrics, metrics.population + metrics.carbonFootprint) : null;
+    status === "active"
+      ? drawEvent(nextTurn, metrics, metrics.population + metrics.carbonFootprint, session.difficulty)
+      : null;
 
   return {
     metrics,

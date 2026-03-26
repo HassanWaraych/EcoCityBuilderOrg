@@ -19,6 +19,9 @@ export default function HomePage() {
             <Link href="/auth/login" className="btn-secondary">
               Log in
             </Link>
+            <Link href="/rules" className="btn-ghost">
+              How to play
+            </Link>
           </div>
         </div>
         <div className="panel stack">

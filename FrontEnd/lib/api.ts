@@ -1,5 +1,5 @@
 import { getToken } from "./auth";
-import type { Player, Session } from "./types";
+import type { LeaderboardEntry, Player, Session } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 
@@ -59,6 +59,10 @@ export function fetchScores(playerId: string) {
       currentTurn: number;
     }[];
   }>(`/players/${playerId}/scores`);
+}
+
+export function fetchLeaderboard() {
+  return request<{ leaderboard: LeaderboardEntry[] }>("/players/leaderboard");
 }
 
 export function fetchCatalog() {
