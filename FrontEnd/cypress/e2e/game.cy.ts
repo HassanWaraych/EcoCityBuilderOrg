@@ -7,10 +7,6 @@ describe("Game Play", () => {
     cy.get('select[name="difficulty"]').select("normal");
     cy.contains("button", "Start game").click();
     cy.url().should("include", "/game/");
-
-    cy.url().then((url) => {
-      sessionUrl = url;
-    });
   });
 
   /* ------------------------------------------------------------------ */
