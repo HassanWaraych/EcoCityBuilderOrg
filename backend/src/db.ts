@@ -1,15 +1,21 @@
 import pg from "pg";
 import type { PoolClient } from "pg";
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
+const useSsl =
+  /sslmode=require/i.test(connectionString) ||
+  /supabase\.co/i.test(connectionString);
+
 export const pool = new pg.Pool({
   connectionString,
+  ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 /**
@@ -29,7 +35,8 @@ export async function getClient(): Promise<PoolClient> {
 export async function runMigrations(): Promise<void> {
   const client = await getClient();
   try {
-    const sqlPath = join(__dirname, "..", "sql", "001_init.sql");
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const sqlPath = join(currentDir, "..", "sql", "001_init.sql");
     const sql = readFileSync(sqlPath, "utf-8");
     await client.query(sql);
   } finally {

@@ -1,77 +1,108 @@
-/**
- * Shared domain and API types (class diagram + DTOs).
- * Used by sim engine, repos, and routes.
- */
-
-// --- Domain (class diagram) ---
+export type SessionStatus = "active" | "completed" | "abandoned" | "lost";
 
 export interface Tile {
-  zone: string;
-  building: string;
-  floodplain: boolean;
+  terrain: "plain" | "rock";
+  zone: string | null;
+  infrastructure: string | null;
 }
 
-export interface Metrics {
+export interface SessionState {
+  gridW: number;
+  gridH: number;
+  tiles: Tile[][];
+  roadsBuilt: number;
+  transitBuilt: number;
+  waterPlantsBuilt: number;
+  windTurbinesBuilt: number;
+  wasteManagementBuilt: number;
+  bikeLanesBuilt: number;
+}
+
+export interface SessionMetrics {
   happiness: number;
   envHealth: number;
-  econStability: number;
-  carbon: number;
+  economy: number;
+  carbonFootprint: number;
+  budget: number;
+  population: number;
+}
+
+export interface ProjectOption {
+  code: string;
+  label: string;
+  cost: number;
+  deltas: MetricsDelta;
+  rejectPenalty: Partial<MetricsDelta>;
+}
+
+export interface EventOption {
+  label: string;
+  deltas: MetricsDelta;
+  budgetDelta?: number;
+}
+
+export interface EventCard {
+  code: string;
+  title: string;
+  description: string;
+  options: EventOption[];
 }
 
 export interface MetricsDelta {
   happiness?: number;
   envHealth?: number;
-  econStability?: number;
-  carbon?: number;
+  economy?: number;
+  carbonFootprint?: number;
+  budget?: number;
+  population?: number;
 }
 
-export interface PolicyEffect {
+export interface TurnAction {
+  category: "zone" | "infrastructure";
   code: string;
-  remainingTurns: number;
-  perTurnDelta: MetricsDelta;
+  tileIndex: number;
 }
 
-export interface CityState {
-  geography: string;
-  gridW: number;
-  gridH: number;
-  tiles: Tile[][];
-  metrics: Metrics;
-  activePolicies: PolicyEffect[];
-  lastEventTurn: number;
-}
-
-export interface Decision {
-  id?: string;
-  turn: number;
-  kind: string;
-  payload: Record<string, unknown>;
-  delta?: Record<string, unknown>;
-}
-
-export interface Achievement {
-  id?: string;
+export interface ProjectDecision {
   code: string;
-  title: string;
-  description: string;
+  decision: "approve" | "reject";
 }
 
-// --- API / request DTOs ---
-
-export interface TakeActionBody {
-  kind: string;
-  payload?: Record<string, unknown>;
+export interface TurnDecisionRecord {
+  actionType: string;
+  detail: Record<string, unknown>;
+  delta: MetricsDelta;
+  cost: number;
 }
 
-export interface TakeActionResponse {
-  state: CityState;
-  metrics: Metrics;
-  pendingEvent?: unknown;
-  achievements?: Achievement[];
+export interface SessionRecord {
+  sessionId: string;
+  playerId: string;
+  cityName: string;
+  difficulty: string;
+  currentTurn: number;
+  status: SessionStatus;
+  happiness: number;
+  envHealth: number;
+  economy: number;
+  carbonFootprint: number;
+  budget: number;
+  population: number;
+  finalScore: number | null;
+  resultTier: string | null;
+  lossReason: string | null;
+  state: SessionState;
+  pendingProjects: ProjectOption[];
+  pendingEvent: EventCard | null;
+  startedAt: string;
+  completedAt: string | null;
 }
 
-// --- Validation result (for 400 vs 409 + tooltip message) ---
-
-export type ValidationOk<T> = { ok: true; data: T };
-export type ValidationFail = { ok: false; message: string };
-export type ValidationResult<T> = ValidationOk<T> | ValidationFail;
+export interface PlayerProfile {
+  playerId: string;
+  username: string;
+  email: string;
+  totalGames: number;
+  bestScore: number;
+  achievements: string[];
+}
