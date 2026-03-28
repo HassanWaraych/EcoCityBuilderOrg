@@ -182,14 +182,14 @@
 </p>
 
 <div class="pyramid">
-  <div class="pyramid-level pyr-e2e">E2E &ndash; Cypress (~45 tests)</div><br />
+  <div class="pyramid-level pyr-e2e">E2E &ndash; Cypress (56 tests)</div><br />
   <div class="pyramid-level pyr-int">Integration &ndash; Supertest + Vitest (28 tests)</div><br />
   <div class="pyramid-level pyr-unit">Unit &ndash; Vitest (143 tests)</div>
 </div>
 
 <div class="stats-row">
   <div class="stat-card">
-    <div class="stat-num">~216</div>
+    <div class="stat-num">227</div>
     <div class="stat-label">Total Test Cases</div>
   </div>
   <div class="stat-card">
@@ -302,7 +302,7 @@
     </tr>
     <tr>
       <td><code>FrontEnd/cypress/e2e/auth.cy.ts</code></td>
-      <td class="num">10</td>
+      <td class="num">9</td>
       <td>Auth flows &ndash; registration form, successful registration + redirect, duplicate user error, login form, successful login + redirect, wrong password, non-existent email, cross-page links</td>
     </tr>
     <tr>
@@ -312,7 +312,7 @@
     </tr>
     <tr>
       <td><code>FrontEnd/cypress/e2e/game.cy.ts</code></td>
-      <td class="num">14+</td>
+      <td class="num">26</td>
       <td>Game play &ndash; page layout (city name, turn counter, 6 metrics, 8&times;8 tile grid, sidebar zones/infrastructure/proposals), tile selection, action queuing (1&ndash;3), error without tile, remove action, project approve/reject, turn resolution (validation, success, metrics update), navigation, results page (metrics, history table), auth guard</td>
     </tr>
   </tbody>
@@ -463,7 +463,7 @@
 <!-- ============================================================ -->
 <!--  6. E2E CYPRESS TESTS                                          -->
 <!-- ============================================================ -->
-<h2>6. End-to-End Cypress Tests (~45 tests)</h2>
+<h2>6. End-to-End Cypress Tests (56 tests)</h2>
 
 <p>
   Cypress E2E tests run in a <strong>real Chromium browser</strong> against the fully running application stack
@@ -734,7 +734,7 @@ npm install && npm test && npm start
 <ul>
   <li><strong>143 unit tests</strong> verify the core game simulation engine, authentication module, and frontend utilities in isolation with no external dependencies.</li>
   <li><strong>28 integration tests</strong> validate all API endpoints with mocked database connections, ensuring correct HTTP status codes, response shapes, Zod validation, and JWT authentication.</li>
-  <li><strong>~45 E2E Cypress tests</strong> exercise the full user journey &mdash; from landing page through registration, login, dashboard, game creation, tile placement, turn resolution, and results viewing &mdash; in a real browser against the live application stack.</li>
+  <li><strong>56 E2E Cypress tests</strong> exercise the full user journey &mdash; from landing page through registration, login, dashboard, game creation, tile placement, turn resolution, and results viewing &mdash; in a real browser against the live application stack.</li>
 </ul>
 
 <p>
@@ -744,7 +744,7 @@ npm install && npm test && npm start
 </p>
 
 <div class="info-box">
-  <strong>Total: ~216 test cases across 13 files, using 3 frameworks (Vitest, Supertest, Cypress),
+  <strong>Total: 227 test cases across 13 files, using 3 frameworks (Vitest, Supertest, Cypress),
   covering unit, integration, and end-to-end testing layers.</strong>
 </div>
 
