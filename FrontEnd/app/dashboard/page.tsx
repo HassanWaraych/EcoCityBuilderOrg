@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { createSession, fetchLeaderboard, fetchProfile, fetchScores, fetchSessions } from "../../lib/api";
 import { clearAuth, getStoredPlayer } from "../../lib/auth";
-import { ALL_ACHIEVEMENTS, achievementLabel, difficultyLabel, difficultyNote } from "../../lib/performance";
+import { ALL_ACHIEVEMENTS, achievementMeta, difficultyLabel, difficultyNote } from "../../lib/performance";
 import type { LeaderboardEntry } from "../../lib/types";
 
 type DashboardData = {
@@ -68,6 +68,7 @@ export default function DashboardPage() {
   }
 
   const earnedCodes = new Set((data.profile?.achievements ?? []).map((a) => a.code));
+  const earnedEntries = new Map((data.profile?.achievements ?? []).map((entry) => [entry.code, entry.earnedAt]));
 
   return (
     <main className="app-shell dashboard-grid">
@@ -191,12 +192,25 @@ export default function DashboardPage() {
           </div>
           <div className="badge-grid">
             {ALL_ACHIEVEMENTS.map((code) => {
-              const { emoji, label } = achievementLabel(code);
+              const meta = achievementMeta(code);
               const earned = earnedCodes.has(code);
               return (
-                <div key={code} className={`badge-item ${earned ? "" : "badge-locked"}`} title={earned ? `Unlocked: ${label}` : `Locked: ${label}`}>
-                  <span className="badge-emoji">{emoji}</span>
-                  <span className="badge-name">{label}</span>
+                <div key={code} className={`badge-item ${earned ? "" : "badge-locked"}`}>
+                  <div className="badge-header">
+                    <span className="badge-emoji">{meta.emoji}</span>
+                    <div>
+                      <div className="badge-name">{meta.label}</div>
+                      <div className={`badge-status ${earned ? "badge-status-earned" : "badge-status-locked"}`}>
+                        {earned ? "Unlocked" : "Locked"}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="badge-description">{meta.description}</p>
+                  <p className="badge-requirement">
+                    {earned
+                      ? `Unlocked ${new Date(earnedEntries.get(code) ?? "").toLocaleDateString()}`
+                      : `How to unlock: ${meta.requirement}`}
+                  </p>
                 </div>
               );
             })}

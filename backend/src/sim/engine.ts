@@ -12,12 +12,17 @@ import type {
 } from "../types/index.ts";
 
 type BuildRequirement = {
-  minRoads?: number;
-  minBikeLanes?: number;
-  minWaste?: number;
-  minTransit?: number;
-  minWater?: number;
   minPopulation?: number;
+  localRadius?: number;
+  minNearbyRoads?: number;
+  minNearbyBikeLanes?: number;
+  minNearbyWaste?: number;
+  minNearbyTransit?: number;
+  minNearbyWater?: number;
+  minNearbyResidential?: number;
+  minNearbyCommercial?: number;
+  minNearbyIndustrial?: number;
+  minNearbyGreenSpace?: number;
   description: string;
 };
 
@@ -116,8 +121,9 @@ export const ZONES: Record<string, ZoneDef> = {
     deltas: { happiness: 3, envHealth: -3, economy: 10, carbonFootprint: 55, population: 300 },
     populationCap: 100,
     requires: {
-      minRoads: 2,
-      description: "Needs 2 road networks for customer access",
+      localRadius: 2,
+      minNearbyRoads: 2,
+      description: "Needs 2 road tiles within 2 tiles for customer access",
     },
   },
   industrial: {
@@ -126,9 +132,10 @@ export const ZONES: Record<string, ZoneDef> = {
     deltas: { happiness: -2, envHealth: -7, economy: 14, carbonFootprint: 110, population: 200 },
     populationCap: 50,
     requires: {
-      minRoads: 2,
-      minWaste: 1,
-      description: "Needs 2 roads + 1 waste management facility",
+      localRadius: 2,
+      minNearbyRoads: 2,
+      minNearbyWaste: 1,
+      description: "Needs 2 nearby road tiles and 1 nearby waste facility within 2 tiles",
     },
   },
   green_space: {
@@ -137,9 +144,10 @@ export const ZONES: Record<string, ZoneDef> = {
     deltas: { happiness: 9, envHealth: 13, economy: 0, carbonFootprint: -70, population: 150 },
     populationCap: 0,
     requires: {
-      minRoads: 1,
-      minBikeLanes: 1,
-      description: "Needs 1 road + 1 bike lane for park access",
+      localRadius: 2,
+      minNearbyRoads: 1,
+      minNearbyResidential: 1,
+      description: "Needs 1 nearby road tile and 1 nearby residential zone within 2 tiles",
     },
   },
   mixed_use: {
@@ -148,8 +156,10 @@ export const ZONES: Record<string, ZoneDef> = {
     deltas: { happiness: 7, envHealth: -2, economy: 12, carbonFootprint: 35, population: 900 },
     populationCap: 300,
     requires: {
-      minRoads: 2,
-      description: "Dense mixed-use development needs 2 road networks",
+      localRadius: 2,
+      minNearbyRoads: 2,
+      minNearbyTransit: 1,
+      description: "Needs 2 nearby road tiles and 1 nearby transit line within 2 tiles",
     },
   },
   solar_farm: {
@@ -158,8 +168,9 @@ export const ZONES: Record<string, ZoneDef> = {
     deltas: { happiness: 4, envHealth: 12, economy: 7, carbonFootprint: -260 },
     populationCap: 0,
     requires: {
-      minRoads: 1,
-      description: "Needs 1 road for grid connection and maintenance access",
+      localRadius: 2,
+      minNearbyRoads: 1,
+      description: "Needs 1 nearby road tile within 2 tiles for maintenance access",
     },
   },
 };
@@ -175,8 +186,10 @@ export const INFRASTRUCTURE: Record<string, InfrastructureDef> = {
     cost: 18000,
     deltas: { happiness: 12, envHealth: 7, carbonFootprint: -380, population: 400 },
     requires: {
-      minRoads: 2,
-      description: "Transit system needs 2 road networks as its foundation",
+      localRadius: 2,
+      minNearbyRoads: 2,
+      minNearbyCommercial: 1,
+      description: "Needs 2 nearby road tiles and 1 nearby commercial zone within 2 tiles",
     },
   },
   water_treatment: {
@@ -184,9 +197,10 @@ export const INFRASTRUCTURE: Record<string, InfrastructureDef> = {
     cost: 13000,
     deltas: { happiness: 7, envHealth: 10, carbonFootprint: 25, population: 500 },
     requires: {
-      minRoads: 1,
+      localRadius: 2,
+      minNearbyRoads: 1,
       minPopulation: 25000,
-      description: "Unlocks at 1 road + population over 25,000",
+      description: "Needs 1 nearby road tile within 2 tiles and population over 25,000",
     },
   },
   wind_turbine: {
@@ -195,8 +209,10 @@ export const INFRASTRUCTURE: Record<string, InfrastructureDef> = {
     deltas: { happiness: 4, envHealth: 14, carbonFootprint: -320 },
     maxCount: 3,
     requires: {
-      minRoads: 1,
-      description: "Needs 1 road for equipment access (max 3 total)",
+      localRadius: 2,
+      minNearbyRoads: 1,
+      minNearbyGreenSpace: 1,
+      description: "Needs 1 nearby road tile and 1 nearby green space within 2 tiles (max 3 total)",
     },
   },
   waste_management: {
@@ -204,8 +220,10 @@ export const INFRASTRUCTURE: Record<string, InfrastructureDef> = {
     cost: 10000,
     deltas: { happiness: 6, envHealth: 12, carbonFootprint: -120 },
     requires: {
-      minRoads: 1,
-      description: "Needs 1 road for collection routes",
+      localRadius: 2,
+      minNearbyRoads: 1,
+      minNearbyIndustrial: 1,
+      description: "Needs 1 nearby road tile and 1 nearby industrial zone within 2 tiles",
     },
   },
   bike_lane: {
@@ -213,8 +231,9 @@ export const INFRASTRUCTURE: Record<string, InfrastructureDef> = {
     cost: 5000,
     deltas: { happiness: 8, envHealth: 5, carbonFootprint: -150, population: 250 },
     requires: {
-      minRoads: 1,
-      description: "Bike lanes must connect to an existing road network",
+      localRadius: 1,
+      minNearbyRoads: 1,
+      description: "Must connect to a road tile within 1 tile",
     },
   },
 };
@@ -352,6 +371,7 @@ export function buildInitialState(): SessionState {
     gridW,
     gridH,
     tiles,
+    projectMarkers: [],
     roadsBuilt: 0,
     transitBuilt: 0,
     waterPlantsBuilt: 0,
@@ -494,42 +514,93 @@ function getTile(state: SessionState, tileIndex: number): { row: number; col: nu
   return { row, col, tile: state.tiles[row][col] };
 }
 
+function countNearbyMatches(
+  state: SessionState,
+  tileIndex: number,
+  radius: number,
+  predicate: (tile: Tile) => boolean,
+): number {
+  const target = getTile(state, tileIndex);
+  if (!target) return 0;
+
+  let count = 0;
+  for (let row = Math.max(0, target.row - radius); row <= Math.min(state.gridH - 1, target.row + radius); row += 1) {
+    for (let col = Math.max(0, target.col - radius); col <= Math.min(state.gridW - 1, target.col + radius); col += 1) {
+      if (row === target.row && col === target.col) continue;
+      if (predicate(state.tiles[row][col])) count += 1;
+    }
+  }
+
+  return count;
+}
+
 function checkBuildRequirements(
   label: string,
   requires: BuildRequirement | undefined,
   state: SessionState,
   metrics: SessionMetrics,
+  tileIndex: number,
 ): void {
   if (!requires) return;
 
-  if (requires.minRoads && state.roadsBuilt < requires.minRoads) {
-    const needed = requires.minRoads - state.roadsBuilt;
-    throw new Error(
-      label + " needs " + requires.minRoads + " road network" + (requires.minRoads > 1 ? "s" : "") +
-      " (build " + needed + " more road" + (needed > 1 ? "s" : "") + " first)"
-    );
-  }
-  if (requires.minBikeLanes && state.bikeLanesBuilt < requires.minBikeLanes) {
-    const needed = requires.minBikeLanes - state.bikeLanesBuilt;
-    throw new Error(
-      label + " needs " + requires.minBikeLanes + " bike lane network" + (requires.minBikeLanes > 1 ? "s" : "") +
-      " (build " + needed + " more first)"
-    );
-  }
-  if (requires.minWaste && state.wasteManagementBuilt < requires.minWaste) {
-    throw new Error(
-      label + " needs " + requires.minWaste + " waste management facilit" + (requires.minWaste > 1 ? "ies" : "y") + " first"
-    );
-  }
-  if (requires.minTransit && state.transitBuilt < requires.minTransit) {
-    throw new Error(
-      label + " needs " + requires.minTransit + " public transit line" + (requires.minTransit > 1 ? "s" : "") + " first"
-    );
-  }
-  if (requires.minWater && state.waterPlantsBuilt < requires.minWater) {
-    throw new Error(
-      label + " needs " + requires.minWater + " water treatment plant" + (requires.minWater > 1 ? "s" : "") + " first"
-    );
+  const radius = requires.localRadius ?? 0;
+  const localChecks = [
+    {
+      needed: requires.minNearbyRoads,
+      noun: "road tile",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.infrastructure === "road_network"),
+    },
+    {
+      needed: requires.minNearbyBikeLanes,
+      noun: "bike lane",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.infrastructure === "bike_lane"),
+    },
+    {
+      needed: requires.minNearbyWaste,
+      noun: "waste management facility",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.infrastructure === "waste_management"),
+    },
+    {
+      needed: requires.minNearbyTransit,
+      noun: "public transit line",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.infrastructure === "public_transit"),
+    },
+    {
+      needed: requires.minNearbyWater,
+      noun: "water treatment plant",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.infrastructure === "water_treatment"),
+    },
+    {
+      needed: requires.minNearbyResidential,
+      noun: "residential zone",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.zone === "residential"),
+    },
+    {
+      needed: requires.minNearbyCommercial,
+      noun: "commercial zone",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.zone === "commercial"),
+    },
+    {
+      needed: requires.minNearbyIndustrial,
+      noun: "industrial zone",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.zone === "industrial"),
+    },
+    {
+      needed: requires.minNearbyGreenSpace,
+      noun: "green space",
+      count: countNearbyMatches(state, tileIndex, radius, (tile) => tile.zone === "green_space"),
+    },
+  ];
+
+  for (const check of localChecks) {
+    if (!check.needed) continue;
+    if (check.count < check.needed) {
+      throw new Error(
+        label + " needs " + check.needed + " nearby " + check.noun + (check.needed > 1 ? "s" : "") +
+        " within " + radius + " tile" + (radius === 1 ? "" : "s") +
+        " of this location (found " + check.count + ")",
+      );
+    }
   }
   if (requires.minPopulation && metrics.population < requires.minPopulation) {
     throw new Error(
@@ -587,7 +658,7 @@ function applyAction(
     const def = ZONES[action.code];
     if (!def) throw new Error("Unknown zone action");
     if (metrics.budget < def.cost) throw new Error("Insufficient budget");
-    checkBuildRequirements(def.label, def.requires, state, metrics);
+    checkBuildRequirements(def.label, def.requires, state, metrics, action.tileIndex);
     if (target.tile.zone || target.tile.infrastructure) {
       throw new Error("Select an empty buildable tile");
     }
@@ -609,7 +680,7 @@ function applyAction(
   const def = INFRASTRUCTURE[action.code];
   if (!def) throw new Error("Unknown infrastructure action");
   if (metrics.budget < def.cost) throw new Error("Insufficient budget");
-  checkBuildRequirements(def.label, def.requires, state, metrics);
+  checkBuildRequirements(def.label, def.requires, state, metrics, action.tileIndex);
   if (def.maxCount && state.windTurbinesBuilt >= def.maxCount && action.code === "wind_turbine") {
     throw new Error("Wind turbine cap reached (max 3)");
   }
@@ -646,20 +717,39 @@ function applyAction(
   };
 }
 
+function validateProjectPlacement(state: SessionState, tileIndex: number, label: string): void {
+  const target = getTile(state, tileIndex);
+  if (!target) {
+    throw new Error(`Select an empty tile for ${label}`);
+  }
+  if (target.tile.terrain === "rock") {
+    throw new Error(`Select an empty tile for ${label}`);
+  }
+  if (target.tile.zone || target.tile.infrastructure) {
+    throw new Error(`Select an empty tile for ${label}`);
+  }
+  if (state.projectMarkers.some((marker) => marker.tileIndex === tileIndex)) {
+    throw new Error(`Select an empty tile for ${label}`);
+  }
+}
+
 function applyProjects(
+  state: SessionState,
   metrics: SessionMetrics,
   pendingProjects: ProjectOption[],
   decisions: ProjectDecision[],
-): { metrics: SessionMetrics; records: TurnDecisionRecord[] } {
+  turnNumber: number,
+): { state: SessionState; metrics: SessionMetrics; records: TurnDecisionRecord[] } {
   if (pendingProjects.length !== 2) {
-    return { metrics, records: [] };
+    return { state, metrics, records: [] };
   }
 
   if (decisions.length !== pendingProjects.length) {
     throw new Error("Each turn requires decisions for both proposals");
   }
 
-  const map = new Map(decisions.map((decision) => [decision.code, decision.decision]));
+  const map = new Map(decisions.map((decision) => [decision.code, decision]));
+  const nextState: SessionState = structuredClone(state);
   let nextMetrics = metrics;
   const records: TurnDecisionRecord[] = [];
 
@@ -669,15 +759,20 @@ function applyProjects(
       throw new Error("Missing proposal decision");
     }
 
-    if (decision === "approve") {
+    if (decision.decision === "approve") {
       if (nextMetrics.budget < project.cost) {
         throw new Error(`Insufficient budget to approve ${project.label}`);
       }
+      if (decision.tileIndex == null) {
+        throw new Error(`Select an empty tile for ${project.label}`);
+      }
+      validateProjectPlacement(nextState, decision.tileIndex, project.label);
+      nextState.projectMarkers.push({ code: project.code, status: "approve", tileIndex: decision.tileIndex, turnNumber });
       const delta = { ...project.deltas, budget: -project.cost };
       nextMetrics = applyDelta(nextMetrics, delta);
       records.push({
         actionType: "project_approve",
-        detail: { code: project.code, label: project.label },
+        detail: { code: project.code, label: project.label, tileIndex: decision.tileIndex },
         delta,
         cost: project.cost,
       });
@@ -692,7 +787,7 @@ function applyProjects(
     }
   }
 
-  return { metrics: nextMetrics, records };
+  return { state: nextState, metrics: nextMetrics, records };
 }
 
 function applyEvent(metrics: SessionMetrics, event: EventCard | null, responseIndex?: number) {
@@ -765,7 +860,8 @@ export function resolveTurn(
     records.push(resolved.record);
   }
 
-  const projects = applyProjects(metrics, session.pendingProjects, projectDecisions);
+  const projects = applyProjects(state, metrics, session.pendingProjects, projectDecisions, session.currentTurn);
+  state = projects.state;
   metrics = projects.metrics;
   records.push(...projects.records);
 

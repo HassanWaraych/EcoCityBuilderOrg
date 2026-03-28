@@ -1,5 +1,5 @@
 import { getToken } from "./auth";
-import type { LeaderboardEntry, Player, Session } from "./types";
+import type { CatalogAction, LeaderboardEntry, Player, Session } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 
@@ -67,8 +67,8 @@ export function fetchLeaderboard() {
 
 export function fetchCatalog() {
   return request<{
-    zones: { code: string; label: string; cost: number; deltas: Record<string, number> }[];
-    infrastructure: { code: string; label: string; cost: number; deltas: Record<string, number> }[];
+    zones: CatalogAction[];
+    infrastructure: CatalogAction[];
   }>("/game/catalog");
 }
 
@@ -102,7 +102,7 @@ export function submitTurn(
   sessionId: string,
   payload: {
     actions: { category: "zone" | "infrastructure"; code: string; tileIndex: number }[];
-    projectDecisions: { code: string; decision: "approve" | "reject" }[];
+    projectDecisions: { code: string; decision: "approve" | "reject"; tileIndex?: number }[];
     eventResponseIndex?: number;
   },
 ) {

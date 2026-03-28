@@ -10,6 +10,12 @@ export type SessionState = {
   gridW: number;
   gridH: number;
   tiles: Tile[][];
+  projectMarkers: {
+    code: string;
+    status: "approve" | "reject";
+    tileIndex: number;
+    turnNumber: number;
+  }[];
   roadsBuilt: number;
   transitBuilt: number;
   waterPlantsBuilt: number;
@@ -67,6 +73,7 @@ export type Session = {
   state: SessionState;
   pendingProjects: Project[];
   pendingEvent: EventCard | null;
+  achievements: string[];
   startedAt: string;
   completedAt: string | null;
 };
@@ -85,12 +92,17 @@ export type CatalogAction = {
   cost: number;
   deltas: MetricsDelta;
   requires?: {
-    minRoads?: number;
-    minBikeLanes?: number;
-    minWaste?: number;
-    minTransit?: number;
-    minWater?: number;
     minPopulation?: number;
+    localRadius?: number;
+    minNearbyRoads?: number;
+    minNearbyBikeLanes?: number;
+    minNearbyWaste?: number;
+    minNearbyTransit?: number;
+    minNearbyWater?: number;
+    minNearbyResidential?: number;
+    minNearbyCommercial?: number;
+    minNearbyIndustrial?: number;
+    minNearbyGreenSpace?: number;
     description: string;
   } | null;
 };

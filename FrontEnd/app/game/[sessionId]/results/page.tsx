@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { fetchHistory, fetchSession } from "../../../../lib/api";
 import { getStoredPlayer } from "../../../../lib/auth";
 import {
+  ALL_ACHIEVEMENTS,
+  achievementMeta,
   difficultyLabel,
   formatLossReason,
   performanceBrief,
@@ -54,6 +56,7 @@ export default function ResultsPage() {
   const brief = performanceBrief(session);
   const medal = tierMedal(session.resultTier);
   const hasTier = session.resultTier != null;
+  const earnedAchievements = new Set(session.achievements);
 
   const METRIC_ICONS: Record<string, string> = {
     Happiness: "😊",
@@ -159,6 +162,36 @@ export default function ResultsPage() {
       </section>
 
       <section className="table-card">
+        <div className="split">
+          <h2 className="section-title">Achievements</h2>
+          <span className="muted">{session.achievements.length} unlocked this run</span>
+        </div>
+        <div className="badge-grid">
+          {ALL_ACHIEVEMENTS.map((code) => {
+            const meta = achievementMeta(code);
+            const earned = earnedAchievements.has(code);
+            return (
+              <div key={code} className={`badge-item ${earned ? "" : "badge-locked"}`}>
+                <div className="badge-header">
+                  <span className="badge-emoji">{meta.emoji}</span>
+                  <div>
+                    <div className="badge-name">{meta.label}</div>
+                    <div className={`badge-status ${earned ? "badge-status-earned" : "badge-status-locked"}`}>
+                      {earned ? "Unlocked in this session" : "Not unlocked"}
+                    </div>
+                  </div>
+                </div>
+                <p className="badge-description">{meta.description}</p>
+                <p className="badge-requirement">
+                  {earned ? `Unlocked by this run: ${meta.requirement}` : `Requirement: ${meta.requirement}`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="table-card">
         <h2 className="section-title">Decision history</h2>
         <table>
           <thead>
@@ -219,6 +252,7 @@ function friendlyActionDetail(actionType: string, detail: Record<string, unknown
         ? `Automatic turn effects were applied at the start of turn ${turn}.`
         : "Automatic turn effects were applied.";
     case "project_approve":
+      if (label && tileIndex != null) return `You approved ${label}, and it appeared on tile ${tileIndex + 1}.`;
       return label ? `You approved ${label}.` : "You approved a project.";
     case "project_reject":
       return label ? `You rejected ${label}.` : "You rejected a project.";

@@ -36,12 +36,14 @@ const turnSchema = z.object({
     z.object({
       code: z.string().min(1),
       decision: z.enum(["approve", "reject"]),
+      tileIndex: z.number().int().min(0).optional(),
     }),
   ),
   eventResponseIndex: z.number().int().min(0).optional(),
 });
 
 function mapSessionRow(row: Record<string, unknown>): SessionRecord {
+  const rawState = row.state_json as SessionRecord["state"];
   return {
     sessionId: row.session_id as string,
     playerId: row.player_id as string,
@@ -58,9 +60,13 @@ function mapSessionRow(row: Record<string, unknown>): SessionRecord {
     finalScore: row.final_score == null ? null : Number(row.final_score),
     resultTier: (row.result_tier as string | null) ?? null,
     lossReason: (row.loss_reason as string | null) ?? null,
-    state: row.state_json as SessionRecord["state"],
+    state: {
+      ...rawState,
+      projectMarkers: rawState?.projectMarkers ?? [],
+    },
     pendingProjects: (row.pending_projects as SessionRecord["pendingProjects"]) ?? [],
     pendingEvent: (row.pending_event as SessionRecord["pendingEvent"]) ?? null,
+    achievements: [],
     startedAt: String(row.started_at),
     completedAt: row.completed_at ? String(row.completed_at) : null,
   };
@@ -157,7 +163,20 @@ router.get("/sessions/:id", async (req, res) => {
     res.status(404).json({ error: "Session not found" });
     return;
   }
-  res.json({ session });
+  const achievementResult = await pool.query(
+    `SELECT achievement_type
+     FROM achievements
+     WHERE session_id=$1 AND player_id=$2
+     ORDER BY earned_at ASC`,
+    [req.params.id, req.auth!.playerId],
+  );
+  const achievementRows = achievementResult?.rows ?? [];
+  res.json({
+    session: {
+      ...session,
+      achievements: achievementRows.map((row) => row.achievement_type as string),
+    },
+  });
 });
 
 router.post("/sessions/:id/turn", async (req, res) => {
@@ -277,7 +296,10 @@ router.post("/sessions/:id/turn", async (req, res) => {
     await client.query("COMMIT");
 
     res.json({
-      session: mapSessionRow(updatedResult.rows[0]),
+      session: {
+        ...mapSessionRow(updatedResult.rows[0]),
+        achievements: resolved.achievements,
+      },
       maxTurns: MAX_TURNS,
       records: resolved.records,
       achievements: resolved.achievements,

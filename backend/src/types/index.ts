@@ -10,6 +10,12 @@ export interface SessionState {
   gridW: number;
   gridH: number;
   tiles: Tile[][];
+  projectMarkers: {
+    code: string;
+    status: "approve" | "reject";
+    tileIndex: number;
+    turnNumber: number;
+  }[];
   roadsBuilt: number;
   transitBuilt: number;
   waterPlantsBuilt: number;
@@ -66,6 +72,7 @@ export interface TurnAction {
 export interface ProjectDecision {
   code: string;
   decision: "approve" | "reject";
+  tileIndex?: number;
 }
 
 export interface TurnDecisionRecord {
@@ -94,6 +101,7 @@ export interface SessionRecord {
   state: SessionState;
   pendingProjects: ProjectOption[];
   pendingEvent: EventCard | null;
+  achievements: string[];
   startedAt: string;
   completedAt: string | null;
 }

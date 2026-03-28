@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchCatalog, fetchSession, submitTurn } from "../../../lib/api";
 import { getStoredPlayer } from "../../../lib/auth";
 import { difficultyLabel, difficultyNote } from "../../../lib/performance";
-import type { CatalogAction, Session, Tile } from "../../../lib/types";
+import type { CatalogAction, Session, SessionState, Tile } from "../../../lib/types";
 
 type Catalog = {
   zones: CatalogAction[];
@@ -14,6 +14,8 @@ type Catalog = {
 };
 
 type ToastDelta = { label: string; value: number };
+type PreviewTile = Tile & { isPreview?: boolean };
+type ProjectMarker = SessionState["projectMarkers"][number];
 
 export default function GamePage() {
   const params = useParams<{ sessionId: string }>();
@@ -24,7 +26,7 @@ export default function GamePage() {
   const [queuedActions, setQueuedActions] = useState<
     { category: "zone" | "infrastructure"; code: string; tileIndex: number }[]
   >([]);
-  const [projectDecisions, setProjectDecisions] = useState<Record<string, "approve" | "reject">>({});
+  const [projectDecisions, setProjectDecisions] = useState<Record<string, { decision: "approve" | "reject"; tileIndex?: number }>>({});
   const [eventResponseIndex, setEventResponseIndex] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -109,7 +111,8 @@ export default function GamePage() {
         actions: queuedActions,
         projectDecisions: session.pendingProjects.map((project) => ({
           code: project.code,
-          decision: projectDecisions[project.code],
+          decision: projectDecisions[project.code].decision,
+          ...(projectDecisions[project.code].tileIndex != null ? { tileIndex: projectDecisions[project.code].tileIndex } : {}),
         })),
         ...(session.pendingEvent ? { eventResponseIndex } : {}),
       });
@@ -138,6 +141,27 @@ export default function GamePage() {
   const budgetOk = session.budget > 0;
   const metricsOk = session.happiness > 0 && session.envHealth > 0 && session.economy > 0;
   const completed = session.status !== "active";
+  const previewState = buildPreviewState(session.state, queuedActions);
+  const nearbySummary = selectedTile == null ? null : describeNearbyPlacement(previewState, selectedTile);
+
+  function approveProject(code: string, label: string) {
+    if (!session) return;
+    if (selectedTile == null) {
+      setError(`Select an empty tile for ${label}, then approve it.`);
+      return;
+    }
+    if (!isTileOpenForProjectPlacement(session.state, queuedActions, projectDecisions, selectedTile, code)) {
+      setError(`Select an empty tile for ${label}, then approve it.`);
+      return;
+    }
+    setProjectDecisions((current) => ({ ...current, [code]: { decision: "approve", tileIndex: selectedTile } }));
+    setError(null);
+  }
+
+  function rejectProject(code: string) {
+    setProjectDecisions((current) => ({ ...current, [code]: { decision: "reject" } }));
+    setError(null);
+  }
 
   return (
     <main className="app-shell">
@@ -197,9 +221,14 @@ export default function GamePage() {
               className="city-grid"
               style={{ gridTemplateColumns: `repeat(${session.state.gridW}, minmax(0, 1fr))` }}
             >
-              {session.state.tiles.flat().map((tile, index) => {
-                const previewTile = tileWithQueuedAction(tile, index, queuedActions);
-                const art = tileArt(previewTile.zone, previewTile.infrastructure, previewTile.terrain);
+              {previewState.tiles.flat().map((tile, index) => {
+                const previewTile = tile as PreviewTile;
+                const projectMarker = previewState.projectMarkers.find(
+                  (marker) => marker.tileIndex === index && marker.status === "approve",
+                );
+                const art = projectMarker
+                  ? projectArt(projectMarker.code)
+                  : tileArt(previewTile.zone, previewTile.infrastructure, previewTile.terrain);
 
                 return (
                   <button
@@ -210,11 +239,12 @@ export default function GamePage() {
                     data-terrain={previewTile.terrain}
                     data-selected={selectedTile === index}
                     data-preview={previewTile.isPreview ? "true" : "false"}
+                    data-project={projectMarker ? "approved" : undefined}
                     onClick={() => setSelectedTile(index)}
                   >
                     <span className="tile-floor" />
                     <span
-                      className={`mini-structure ${structureClass(
+                      className={`mini-structure ${projectMarker ? "structure-project" : structureClass(
                         previewTile.zone,
                         previewTile.infrastructure,
                         previewTile.terrain,
@@ -233,6 +263,11 @@ export default function GamePage() {
                     <span className="tile-icon">
                       {tileGlyph(previewTile.zone, previewTile.infrastructure, previewTile.terrain)}
                     </span>
+                    {projectMarker && (
+                      <span className="project-glyph">
+                        {projectGlyph(projectMarker.code)}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -270,6 +305,7 @@ export default function GamePage() {
                   ? "Choose a tile to build on it."
                   : tilePreviewText(selectedTile, queuedActions)}
               </p>
+              {nearbySummary && <p className="muted">{nearbySummary}</p>}
             </div>
           </div>
         </div>
@@ -359,31 +395,33 @@ export default function GamePage() {
             <h2 className="section-title">Proposals</h2>
             <div className="proposal-list">
               {session.pendingProjects.map((project) => (
-                <div className="proposal-card" key={project.code}>
+                <div className="proposal-card proposal-project-card" key={project.code}>
                   <div className="card-head">
-                    <img className="card-thumb" src={projectArt(project.code)} alt="" />
+                    <img className="card-thumb" src={projectArt(project.code)} alt={`${project.label} proposal art`} />
                     <div className="card-meta">
+                      <span className="card-tag project-tag">Project proposal</span>
                       <strong>{project.label}</strong>
                     </div>
                   </div>
                   <p className="muted">Approve: {formatDelta(project.deltas)} · Cost ${project.cost.toLocaleString()}</p>
                   <p className="muted">Reject: {formatDelta(project.rejectPenalty)}</p>
+                  <p className="muted">
+                    {projectDecisions[project.code]?.decision === "approve" && projectDecisions[project.code]?.tileIndex != null
+                      ? `Will appear on tile ${projectDecisions[project.code].tileIndex! + 1}.`
+                      : "To approve, click an empty tile first."}
+                  </p>
                   <div className="inline-row">
                     <button
-                      className={projectDecisions[project.code] === "approve" ? "btn" : "btn-secondary"}
+                      className={projectDecisions[project.code]?.decision === "approve" ? "btn" : "btn-secondary"}
                       type="button"
-                      onClick={() =>
-                        setProjectDecisions((current) => ({ ...current, [project.code]: "approve" }))
-                      }
+                      onClick={() => approveProject(project.code, project.label)}
                     >
                       Approve
                     </button>
                     <button
-                      className={projectDecisions[project.code] === "reject" ? "btn" : "btn-ghost"}
+                      className={projectDecisions[project.code]?.decision === "reject" ? "btn" : "btn-ghost"}
                       type="button"
-                      onClick={() =>
-                        setProjectDecisions((current) => ({ ...current, [project.code]: "reject" }))
-                      }
+                      onClick={() => rejectProject(project.code)}
                     >
                       Reject
                     </button>
@@ -399,7 +437,7 @@ export default function GamePage() {
               <p className="muted">{session.pendingEvent.description}</p>
               {session.pendingEvent.options.map((option, index) => (
                 <button
-                  className={eventResponseIndex === index ? "action-card" : "proposal-card"}
+                  className={`proposal-card event-card ${eventResponseIndex === index ? "event-card-selected" : ""}`}
                   key={`${session.pendingEvent?.code}-${index}`}
                   type="button"
                   onClick={() => setEventResponseIndex(index)}
@@ -407,10 +445,11 @@ export default function GamePage() {
                   <div className="card-head">
                     <img
                       className="card-thumb"
-                      src={eventArt(session.pendingEvent?.code ?? "", index)}
-                      alt=""
+                      src={eventArt(session.pendingEvent?.code ?? "")}
+                      alt={`${session.pendingEvent?.title ?? "Event"} art`}
                     />
                     <div className="card-meta">
+                      <span className="card-tag event-tag">Random event</span>
                       <strong>{option.label}</strong>
                     </div>
                   </div>
@@ -508,6 +547,16 @@ function tileGlyph(zone: string | null, infrastructure: string | null, terrain: 
   return "·";
 }
 
+function projectGlyph(code: string) {
+  if (code === "corporate_hq") return "CH";
+  if (code === "community_centre") return "CC";
+  if (code === "coal_power_plant") return "CP";
+  if (code === "affordable_housing") return "AH";
+  if (code === "tech_campus") return "TC";
+  if (code === "urban_farm") return "UF";
+  return "PR";
+}
+
 function structureClass(zone: string | null, infrastructure: string | null, terrain: string) {
   if (terrain === "rock") return "structure-rock";
   if (infrastructure === "road_network") return "structure-road";
@@ -554,15 +603,22 @@ function tilePreviewText(
   return `Tile ${tileIndex + 1} will preview ${queued.code.replaceAll("_", " ")} when this turn resolves.`;
 }
 
-function tileWithQueuedAction(
-  tile: Tile,
-  tileIndex: number,
+function buildPreviewState(
+  state: SessionState,
   queuedActions: { category: "zone" | "infrastructure"; code: string; tileIndex: number }[],
 ) {
-  const previewTile: Tile & { isPreview?: boolean } = { ...tile };
-  const queuedForTile = queuedActions.filter((action) => action.tileIndex === tileIndex);
+  const previewState: SessionState = {
+    ...state,
+    projectMarkers: [...(state.projectMarkers ?? [])],
+    tiles: state.tiles.map((row) => row.map((tile) => ({ ...tile }))),
+  };
 
-  for (const action of queuedForTile) {
+  for (const action of queuedActions) {
+    const row = Math.floor(action.tileIndex / state.gridW);
+    const col = action.tileIndex % state.gridW;
+    if (!previewState.tiles[row]?.[col]) continue;
+
+    const previewTile = previewState.tiles[row][col] as PreviewTile;
     if (action.category === "zone") {
       previewTile.zone = action.code;
     } else {
@@ -571,7 +627,60 @@ function tileWithQueuedAction(
     previewTile.isPreview = true;
   }
 
-  return previewTile;
+  return previewState;
+}
+
+function countNearby(
+  state: SessionState,
+  tileIndex: number,
+  radius: number,
+  predicate: (tile: Tile) => boolean,
+) {
+  const row = Math.floor(tileIndex / state.gridW);
+  const col = tileIndex % state.gridW;
+  let count = 0;
+
+  for (let currentRow = Math.max(0, row - radius); currentRow <= Math.min(state.gridH - 1, row + radius); currentRow += 1) {
+    for (let currentCol = Math.max(0, col - radius); currentCol <= Math.min(state.gridW - 1, col + radius); currentCol += 1) {
+      if (currentRow === row && currentCol === col) continue;
+      if (predicate(state.tiles[currentRow][currentCol])) count += 1;
+    }
+  }
+
+  return count;
+}
+
+function describeNearbyPlacement(state: SessionState, tileIndex: number) {
+  const radius = 2;
+  const roads = countNearby(state, tileIndex, radius, (tile) => tile.infrastructure === "road_network");
+  const transit = countNearby(state, tileIndex, radius, (tile) => tile.infrastructure === "public_transit");
+  const waste = countNearby(state, tileIndex, radius, (tile) => tile.infrastructure === "waste_management");
+  const housing = countNearby(state, tileIndex, radius, (tile) => tile.zone === "residential");
+  const commerce = countNearby(state, tileIndex, radius, (tile) => tile.zone === "commercial");
+  const parks = countNearby(state, tileIndex, radius, (tile) => tile.zone === "green_space");
+
+  return `Nearby within 2 tiles: ${roads} road, ${transit} transit, ${waste} waste, ${housing} residential, ${commerce} commercial, ${parks} green space.`;
+}
+
+function isTileOpenForProjectPlacement(
+  state: SessionState,
+  queuedActions: { category: "zone" | "infrastructure"; code: string; tileIndex: number }[],
+  projectDecisions: Record<string, { decision: "approve" | "reject"; tileIndex?: number }>,
+  tileIndex: number,
+  projectCode: string,
+) {
+  const row = Math.floor(tileIndex / state.gridW);
+  const col = tileIndex % state.gridW;
+  const tile = state.tiles[row]?.[col];
+  if (!tile || tile.terrain === "rock" || tile.zone || tile.infrastructure) return false;
+  if (state.projectMarkers.some((marker) => marker.tileIndex === tileIndex)) return false;
+  if (queuedActions.some((action) => action.tileIndex === tileIndex)) return false;
+  if (
+    Object.entries(projectDecisions).some(
+      ([code, value]) => code !== projectCode && value.decision === "approve" && value.tileIndex === tileIndex,
+    )
+  ) return false;
+  return true;
 }
 
 function actionArt(code: string, category: "zone" | "infrastructure") {
@@ -594,23 +703,11 @@ function actionArt(code: string, category: "zone" | "infrastructure") {
 }
 
 function projectArt(code: string) {
-  if (code === "corporate_hq") return "/game-icons-png/apartment.png";
-  if (code === "community_centre") return "/game-icons-png/civic.png";
-  if (code === "coal_power_plant") return "/game-icons-png/factory.png";
-  if (code === "affordable_housing") return "/game-icons-png/house.png";
-  if (code === "tech_campus") return "/game-icons-png/civic.png";
-  if (code === "urban_farm") return "/game-icons-png/park.png";
-  return "/game-icons-png/civic.png";
+  return `/assets/icons/${code}.png`;
 }
 
-function eventArt(eventCode: string, optionIndex: number) {
-  if (eventCode === "flash_flood" || eventCode === "drought") return "/game-icons-png/water-tower.png";
-  if (eventCode === "economic_boom" || eventCode === "tech_investment_offer") {
-    return optionIndex === 0 ? "/game-icons-png/civic.png" : "/game-icons-png/apartment.png";
-  }
-  if (eventCode === "citizen_protest") return "/game-icons-png/park.png";
-  if (eventCode === "disease_outbreak") return "/game-icons-png/water-tower.png";
-  return "/game-icons-png/civic.png";
+function eventArt(eventCode: string) {
+  return `/assets/icons/${eventCode}.png`;
 }
 
 function formatDelta(delta: Record<string, number | undefined>) {

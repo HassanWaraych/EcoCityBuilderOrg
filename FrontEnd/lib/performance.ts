@@ -44,40 +44,105 @@ export function tierMedal(tier: string | null): { emoji: string; label: string; 
   }
 }
 
+export type AchievementMeta = {
+  emoji: string;
+  label: string;
+  description: string;
+  requirement: string;
+};
+
+const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
+  first_win: {
+    emoji: "🏆",
+    label: "First Victory",
+    description: "Finish a full city run without collapsing.",
+    requirement: "Complete any session and reach the end of the campaign.",
+  },
+  green_city: {
+    emoji: "🌿",
+    label: "Green City",
+    description: "Your city stayed healthy while keeping emissions under control.",
+    requirement: "Finish with environmental health of 70+ and carbon footprint of 3,000 or less.",
+  },
+  budget_master: {
+    emoji: "💰",
+    label: "Budget Master",
+    description: "You built growth without draining the treasury.",
+    requirement: "Finish with economy of 70+ and at least $50,000 in budget.",
+  },
+  happy_citizens: {
+    emoji: "😄",
+    label: "Happy Citizens",
+    description: "Residents ended the campaign with strong morale.",
+    requirement: "Finish with happiness of 75 or higher.",
+  },
+  eco_champion: {
+    emoji: "♻️",
+    label: "Eco Champion",
+    description: "You delivered an elite sustainability run.",
+    requirement: "Finish with environmental health of 80+ and carbon footprint of 2,000 or less.",
+  },
+  urban_planner: {
+    emoji: "🏗️",
+    label: "Urban Planner",
+    description: "Your city strategy produced a strong overall score.",
+    requirement: "Finish with a score of 70,000 or higher.",
+  },
+  hard_mode_win: {
+    emoji: "🔥",
+    label: "Hard Mode Victor",
+    description: "You survived the campaign on the toughest setting.",
+    requirement: "Complete a session on hard difficulty.",
+  },
+  carbon_neutral: {
+    emoji: "🌍",
+    label: "Carbon Neutral",
+    description: "You drove emissions down to a near-net-zero city footprint.",
+    requirement: "Finish with carbon footprint of 1,000 or less.",
+  },
+  infrastructure_king: {
+    emoji: "🚇",
+    label: "Infrastructure King",
+    description: "You combined strong systems and scoring into a top-tier city.",
+    requirement: "Finish with a score of 85,000 or higher.",
+  },
+  population_boom: {
+    emoji: "📈",
+    label: "Population Boom",
+    description: "Your city became a major urban centre.",
+    requirement: "Finish with a population of 100,000 or more.",
+  },
+  survivor: {
+    emoji: "🛡️",
+    label: "Survivor",
+    description: "You endured the entire 15-turn campaign.",
+    requirement: "Reach turn 15 and complete the session.",
+  },
+  speed_builder: {
+    emoji: "⚡",
+    label: "Speed Builder",
+    description: "You put together a strong city unusually quickly.",
+    requirement: "Finish by turn 10 or earlier with a score of at least 50,000.",
+  },
+};
+
 /** Returns emoji + readable label for a known achievement code */
 export function achievementLabel(code: string): { emoji: string; label: string } {
-  const MAP: Record<string, { emoji: string; label: string }> = {
-    first_win: { emoji: "🏆", label: "First Victory" },
-    green_city: { emoji: "🌿", label: "Green City" },
-    budget_master: { emoji: "💰", label: "Budget Master" },
-    happy_citizens: { emoji: "😄", label: "Happy Citizens" },
-    eco_champion: { emoji: "♻️", label: "Eco Champion" },
-    urban_planner: { emoji: "🏗️", label: "Urban Planner" },
-    hard_mode_win: { emoji: "🔥", label: "Hard Mode Victor" },
-    carbon_neutral: { emoji: "🌍", label: "Carbon Neutral" },
-    infrastructure_king: { emoji: "🚇", label: "Infrastructure King" },
-    population_boom: { emoji: "📈", label: "Population Boom" },
-    survivor: { emoji: "🛡️", label: "Survivor" },
-    speed_builder: { emoji: "⚡", label: "Speed Builder" },
+  const meta = ACHIEVEMENT_META[code];
+  return meta ?? { emoji: "🎖️", label: code.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) };
+}
+
+export function achievementMeta(code: string): AchievementMeta {
+  return ACHIEVEMENT_META[code] ?? {
+    emoji: "🎖️",
+    label: code.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    description: "Complete the hidden requirement for this badge.",
+    requirement: "Unlock requirement is not documented for this code yet.",
   };
-  return MAP[code] ?? { emoji: "🎖️", label: code.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) };
 }
 
 /** Known achievement codes — used to render locked badges */
-export const ALL_ACHIEVEMENTS = [
-  "first_win",
-  "green_city",
-  "budget_master",
-  "happy_citizens",
-  "eco_champion",
-  "urban_planner",
-  "hard_mode_win",
-  "carbon_neutral",
-  "infrastructure_king",
-  "population_boom",
-  "survivor",
-  "speed_builder",
-];
+export const ALL_ACHIEVEMENTS = Object.keys(ACHIEVEMENT_META);
 
 export function performanceBrief(session: Session) {
   const metrics = [
