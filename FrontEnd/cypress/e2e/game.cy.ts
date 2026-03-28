@@ -28,8 +28,8 @@ describe("Game Play", () => {
       cy.get(".hud").should("contain.text", "Population");
     });
 
-    it("renders a 10×10 city grid (100 tile buttons)", () => {
-      cy.get(".city-grid .tile-button").should("have.length", 100);
+    it("renders an 8×8 city grid (64 tile buttons)", () => {
+      cy.get(".city-grid .tile-button").should("have.length", 64);
     });
 
     it("shows the Zones sidebar with zone options", () => {
@@ -184,7 +184,7 @@ describe("Game Play", () => {
     });
 
     it("updates budget metric after building a zone", () => {
-      cy.get(".hud .metric-card").contains("Budget").parent().find("strong").invoke("text").then((initialBudget) => {
+      cy.get(".hud .hud-metric").contains("Budget").parents(".hud-metric").find(".hud-metric-value").invoke("text").then((initialBudget) => {
         cy.get(".city-grid .tile-button").first().click();
         cy.get(".sidebar-card .action-card").contains("Residential").click();
 
@@ -197,7 +197,7 @@ describe("Game Play", () => {
         cy.contains("button", "Resolve turn").click();
         cy.get(".small-kicker").should("contain.text", "Turn 2 of 15");
 
-        cy.get(".hud .metric-card").contains("Budget").parent().find("strong").invoke("text").then((newBudget) => {
+        cy.get(".hud .hud-metric").contains("Budget").parents(".hud-metric").find(".hud-metric-value").invoke("text").then((newBudget) => {
           expect(newBudget).not.to.eq(initialBudget);
         });
       });
@@ -236,7 +236,7 @@ describe("Game Play", () => {
       cy.url().should("include", "/results");
 
       cy.get(".route-title").should("contain.text", "E2E City");
-      cy.contains("Status:").should("be.visible");
+      cy.get(".muted").should("contain.text", "active");
       cy.get(".hud .metric-card").should("have.length", 6);
       cy.get(".section-title").should("contain.text", "Decision history");
       cy.get("table thead th").should("contain.text", "Turn");
