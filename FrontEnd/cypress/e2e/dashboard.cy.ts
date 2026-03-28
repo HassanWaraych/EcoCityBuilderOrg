@@ -42,8 +42,8 @@ describe("Dashboard", () => {
     });
 
     it("shows Total games and Best score stats", () => {
-      cy.contains("strong", "Total games").should("be.visible");
-      cy.contains("strong", "Best score").should("be.visible");
+      cy.get(".dashboard-stat .small-kicker").should("contain.text", "Total games");
+      cy.get(".dashboard-stat .small-kicker").should("contain.text", "Best score");
     });
 
     it("shows the Sessions section", () => {

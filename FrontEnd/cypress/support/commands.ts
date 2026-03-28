@@ -18,6 +18,7 @@ declare global {
   }
 }
 
+  // API - Register
 Cypress.Commands.add("apiRegister", (username: string, email: string, password: string) => {
   cy.request("POST", `${API_URL}/auth/register`, { username, email, password }).then(
     (response) => {
@@ -27,6 +28,7 @@ Cypress.Commands.add("apiRegister", (username: string, email: string, password: 
   );
 });
 
+  // API - Login
 Cypress.Commands.add("apiLogin", (email: string, password: string) => {
   cy.request("POST", `${API_URL}/auth/login`, { email, password }).then((response) => {
     window.localStorage.setItem("ecocity_token", response.body.token);
@@ -34,6 +36,7 @@ Cypress.Commands.add("apiLogin", (email: string, password: string) => {
   });
 });
 
+  // UI - Register
 Cypress.Commands.add("uiRegister", (username: string, email: string, password: string) => {
   cy.visit("/auth/register");
   cy.get('input[name="username"]').type(username);
@@ -43,6 +46,7 @@ Cypress.Commands.add("uiRegister", (username: string, email: string, password: s
   cy.url().should("include", "/dashboard");
 });
 
+  // UI - Login
 Cypress.Commands.add("uiLogin", (email: string, password: string) => {
   cy.visit("/auth/login");
   cy.get('input[name="email"]').type(email);
@@ -51,6 +55,7 @@ Cypress.Commands.add("uiLogin", (email: string, password: string) => {
   cy.url().should("include", "/dashboard");
 });
 
+  // Create Test User
 Cypress.Commands.add("createTestUser", () => {
   const id = Date.now();
   const user = {

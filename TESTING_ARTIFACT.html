@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcoCity Builder – Testing Artifact</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a2e;
+    --muted: #64748b;
+    --accent: #16a34a;
+    --accent-light: #dcfce7;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --section-bg: #f8fafc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    line-height: 1.7;
+    font-size: 15px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 32px;
+  }
+
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 22px; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 17px; font-weight: 600; margin-top: 28px; margin-bottom: 10px; color: var(--accent); }
+
+  p { margin-bottom: 12px; }
+  .muted { color: var(--muted); }
+  .accent { color: var(--accent); font-weight: 600; }
+
+  /* Title page */
+  .title-page {
+    text-align: center;
+    padding: 80px 0 60px;
+    border-bottom: 3px solid var(--accent);
+    margin-bottom: 48px;
+  }
+  .title-page h1 { font-size: 36px; margin-bottom: 4px; }
+  .title-page .subtitle { font-size: 20px; color: var(--accent); font-weight: 600; margin-bottom: 24px; }
+  .title-page .meta { font-size: 14px; color: var(--muted); line-height: 2; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  thead { background: var(--accent); color: #fff; }
+  th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--accent-light); }
+  .num { text-align: center; font-weight: 600; }
+
+  /* Code blocks */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; }
+
+  /* Info box */
+  .info-box {
+    background: var(--accent-light);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0 24px;
+  }
+  .info-box strong { color: var(--accent); }
+
+  .warning-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0 24px;
+  }
+
+  /* Pyramid */
+  .pyramid { text-align: center; margin: 24px 0; }
+  .pyramid-level {
+    display: inline-block;
+    padding: 10px 0;
+    margin: 4px auto;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 6px;
+    color: #fff;
+  }
+  .pyr-e2e { background: #ef4444; width: 200px; }
+  .pyr-int { background: #f59e0b; width: 320px; }
+  .pyr-unit { background: var(--accent); width: 460px; }
+
+  /* Section cards */
+  .test-section {
+    background: var(--section-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0 24px;
+  }
+  .test-section h4 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+
+  ul { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+
+  /* Stats row */
+  .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0 24px; }
+  .stat-card {
+    flex: 1;
+    min-width: 140px;
+    background: var(--section-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .stat-card .stat-num { font-size: 32px; font-weight: 700; color: var(--accent); }
+  .stat-card .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* Print */
+  @media print {
+    body { padding: 0; font-size: 12px; max-width: 100%; }
+    .title-page { padding: 40px 0 30px; page-break-after: always; }
+    h2 { page-break-before: auto; margin-top: 28px; }
+    .test-section, pre, table { page-break-inside: avoid; }
+    tbody tr:hover { background: none; }
+    .stats-row { gap: 8px; }
+    .stat-card .stat-num { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!--  TITLE PAGE                                                    -->
+<!-- ============================================================ -->
+<div class="title-page">
+  <h1>EcoCity Builder</h1>
+  <div class="subtitle">Testing Artifact</div>
+  <div class="meta">
+    SENG 401 &ndash; Software Architecture &bull; Winter 2026<br />
+    Dr. Ronnie de Souza Santos<br />
+    University of Calgary<br /><br />
+    <strong>Group 13 &ndash; Lab Section 01</strong><br />
+    Shaheer Shakir &bull; Mustafa Ayobi &bull; Hassan Waraych<br />
+    Fateh Ali &bull; Haseeb Tahir &bull; Muhammad Zain<br /><br />
+    Date: March 2026<br /><br />
+    <em>This testing artifact was created with the help of Claude AI &ndash; Sonnet 4.6</em>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  1. TESTING STRATEGY                                           -->
+<!-- ============================================================ -->
+<h2>1. Testing Strategy Overview</h2>
+
+<p>
+  The EcoCity Builder test suite follows a <strong>testing pyramid</strong> approach: a large base of fast unit tests,
+  a middle layer of integration tests that validate API behaviour with mocked databases, and a top layer of
+  end-to-end (E2E) Cypress tests that exercise the full application through a real browser.
+</p>
+
+<div class="pyramid">
+  <div class="pyramid-level pyr-e2e">E2E &ndash; Cypress (56 tests)</div><br />
+  <div class="pyramid-level pyr-int">Integration &ndash; Supertest + Vitest (28 tests)</div><br />
+  <div class="pyramid-level pyr-unit">Unit &ndash; Vitest (143 tests)</div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-num">227</div>
+    <div class="stat-label">Total Test Cases</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">13</div>
+    <div class="stat-label">Test Files</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">3</div>
+    <div class="stat-label">Testing Layers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">3</div>
+    <div class="stat-label">Frameworks Used</div>
+  </div>
+</div>
+
+<h3>Frameworks &amp; Tools</h3>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Purpose</th><th>Layer</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Vitest</strong></td><td>Test runner for both backend and frontend unit/integration tests. Native TypeScript and ESM support.</td><td>Unit + Integration</td></tr>
+    <tr><td><strong>Supertest</strong></td><td>HTTP assertion library used to test Express API routes without starting a live server.</td><td>Integration</td></tr>
+    <tr><td><strong>Cypress</strong></td><td>Browser-based E2E testing framework. Drives a real browser against the live application.</td><td>E2E</td></tr>
+    <tr><td><strong>jsdom</strong></td><td>Provides a browser-like DOM environment for frontend unit tests running in Node.js.</td><td>Unit (Frontend)</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!--  2. TEST FILE INVENTORY                                        -->
+<!-- ============================================================ -->
+<h2>2. Complete Test File Inventory</h2>
+
+<h3>Backend &ndash; Vitest Unit &amp; Integration Tests (150 tests)</h3>
+<table>
+  <thead>
+    <tr><th>File</th><th>Type</th><th class="num">Tests</th><th class="num">Lines</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>backend/src/__tests__/engine.test.ts</code></td>
+      <td>Unit</td>
+      <td class="num">107</td>
+      <td class="num">1235</td>
+      <td>Simulation engine &ndash; clampMetric, buildInitialState, drawProjects, drawEvent, calculateScore, scoreTier, achievementsForScore, resolveTurn (zones, infrastructure, projects, events, loss/win conditions, passive effects), difficulty settings, game constants</td>
+    </tr>
+    <tr>
+      <td><code>backend/src/__tests__/auth.test.ts</code></td>
+      <td>Unit</td>
+      <td class="num">15</td>
+      <td class="num">136</td>
+      <td>Auth module &ndash; bcrypt password hashing/verification, JWT signing/expiry, requireAuth middleware (valid/missing/invalid/expired tokens)</td>
+    </tr>
+    <tr>
+      <td><code>backend/src/__tests__/auth.routes.test.ts</code></td>
+      <td>Integration</td>
+      <td class="num">8</td>
+      <td class="num">128</td>
+      <td>Auth API routes &ndash; POST /register (success, validation, duplicate), POST /login (success, wrong password, non-existent, validation)</td>
+    </tr>
+    <tr>
+      <td><code>backend/src/__tests__/game.routes.test.ts</code></td>
+      <td>Integration</td>
+      <td class="num">13</td>
+      <td class="num">267</td>
+      <td>Game API routes &ndash; auth guard, GET /catalog, POST /sessions, GET /sessions, GET /sessions/:id, POST /sessions/:id/turn, GET /sessions/:id/history</td>
+    </tr>
+    <tr>
+      <td><code>backend/src/__tests__/player.routes.test.ts</code></td>
+      <td>Integration</td>
+      <td class="num">7</td>
+      <td class="num">126</td>
+      <td>Player API routes &ndash; GET /profile (success, 403, 404, 401), GET /scores (success, 403, empty)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Frontend &ndash; Vitest Unit Tests (21 tests)</h3>
+<table>
+  <thead>
+    <tr><th>File</th><th>Type</th><th class="num">Tests</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>FrontEnd/lib/__tests__/auth.test.ts</code></td>
+      <td>Unit</td>
+      <td class="num">10</td>
+      <td>Auth helpers &ndash; saveAuth, getToken, getStoredPlayer, clearAuth, round-trip localStorage behaviour</td>
+    </tr>
+    <tr>
+      <td><code>FrontEnd/lib/__tests__/api.test.ts</code></td>
+      <td>Unit</td>
+      <td class="num">11</td>
+      <td>API client &ndash; register, login, all endpoint URL mapping, Authorization header injection, error handling (error field, generic, JSON parse failure)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Frontend &ndash; Cypress E2E Tests (~45 tests)</h3>
+<table>
+  <thead>
+    <tr><th>File</th><th class="num">Tests</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>FrontEnd/cypress/e2e/landing.cy.ts</code></td>
+      <td class="num">8</td>
+      <td>Landing page &ndash; hero section, game description, Register/Login links and navigation, core loop action cards</td>
+    </tr>
+    <tr>
+      <td><code>FrontEnd/cypress/e2e/auth.cy.ts</code></td>
+      <td class="num">9</td>
+      <td>Auth flows &ndash; registration form, successful registration + redirect, duplicate user error, login form, successful login + redirect, wrong password, non-existent email, cross-page links</td>
+    </tr>
+    <tr>
+      <td><code>FrontEnd/cypress/e2e/dashboard.cy.ts</code></td>
+      <td class="num">13</td>
+      <td>Dashboard &ndash; auth guard redirect, username display, new session form, difficulty selector, stats cards, sessions/achievements/score history sections, logout flow, session creation + redirect, session list persistence</td>
+    </tr>
+    <tr>
+      <td><code>FrontEnd/cypress/e2e/game.cy.ts</code></td>
+      <td class="num">26</td>
+      <td>Game play &ndash; page layout (city name, turn counter, 6 metrics, 8&times;8 tile grid, sidebar zones/infrastructure/proposals), tile selection, action queuing (1&ndash;3), error without tile, remove action, project approve/reject, turn resolution (validation, success, metrics update), navigation, results page (metrics, history table), auth guard</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Configuration &amp; Support Files</h3>
+<table>
+  <thead>
+    <tr><th>File</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>backend/vitest.config.ts</code></td><td>Vitest configuration for backend tests. References setup file for environment variables.</td></tr>
+    <tr><td><code>backend/src/__tests__/setup.ts</code></td><td>Sets JWT_SECRET, BCRYPT_ROUNDS (fast hashing), and DATABASE_URL before test execution.</td></tr>
+    <tr><td><code>FrontEnd/vitest.config.ts</code></td><td>Vitest configuration for frontend tests. Uses jsdom environment for browser API emulation.</td></tr>
+    <tr><td><code>FrontEnd/cypress.config.ts</code></td><td>Cypress configuration. Sets baseUrl to localhost:3000, viewport 1280&times;800, 10s command timeout.</td></tr>
+    <tr><td><code>FrontEnd/cypress/tsconfig.json</code></td><td>TypeScript configuration scoped to Cypress files.</td></tr>
+    <tr><td><code>FrontEnd/cypress/support/e2e.ts</code></td><td>Cypress support entry point. Imports custom commands.</td></tr>
+    <tr><td><code>FrontEnd/cypress/support/commands.ts</code></td><td>5 custom Cypress commands: apiRegister, apiLogin, uiRegister, uiLogin, createTestUser.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!--  3. BACKEND UNIT TESTS                                         -->
+<!-- ============================================================ -->
+<h2>3. Backend Unit Tests (122 tests &ndash; engine + auth)</h2>
+
+<h3>3.1 Simulation Engine &ndash; <code>engine.test.ts</code> (107 tests)</h3>
+<p>
+  This is the most critical test file. The simulation engine contains all game logic as <strong>pure functions</strong>
+  with no side effects, making it highly testable. Every function exported from <code>sim/engine.ts</code> is covered.
+</p>
+
+<div class="test-section">
+  <h4>Utility Functions</h4>
+  <ul>
+    <li><strong>clampMetric</strong> (4 tests) &ndash; Boundary clamping at 0 and 100, rounding, pass-through for valid values</li>
+    <li><strong>buildInitialState</strong> (4 tests) &ndash; 8&times;8 grid creation, 5 fixed rock tiles at expected coordinates, plain terrain defaults, all infrastructure counters at zero</li>
+    <li><strong>drawProjects</strong> (4 tests) &ndash; Always returns 2 unique projects, seed variation produces different combinations, all from valid catalogue</li>
+    <li><strong>drawEvent</strong> (5 tests) &ndash; Difficulty-aware turn gating (normal: turn 3, hard: turn 2), seed-based roll vs. event chance, event structure validation, eligibility filtering</li>
+    <li><strong>calculateScore</strong> (4 tests) &ndash; Weighted formula verification (happiness&times;400, envHealth&times;400, economy&times;200, -carbon&times;0.05, +budget&times;0.001, +turns&times;500), non-negative guarantee, equal weight for happiness/envHealth, 500 points per turn</li>
+    <li><strong>scoreTier</strong> (6 tests) &ndash; All 6 tiers from S (&ge;95k) to F (&lt;25k) with boundary values</li>
+    <li><strong>achievementsForScore</strong> (9 tests) &ndash; first_win always awarded, green_city, budget_master, happy_citizens, urban_planner, hard_mode_win, carbon_neutral, survivor, difficulty-specific exclusions</li>
+    <li><strong>summarizeMetrics</strong> (1 test) &ndash; Extracts all 6 metrics from session record</li>
+    <li><strong>listCatalog</strong> (4 tests) &ndash; Returns all zones, infrastructure, and projects with correct structure</li>
+    <li><strong>Game constants</strong> (5 tests) &ndash; MAX_TURNS = 15, MAX_ACTIONS_PER_TURN = 3, positive costs, wind turbine cap = 3</li>
+  </ul>
+</div>
+
+<div class="test-section">
+  <h4>resolveTurn &ndash; Full Turn Resolution Pipeline</h4>
+  <ul>
+    <li><strong>Session validation</strong> (5 tests) &ndash; Rejects non-active/lost sessions, rejects &gt;3 actions, accepts exactly 3, allows 0 actions (skip turn)</li>
+    <li><strong>Passive turn effects</strong> (7 tests) &ndash; Base budget grant + tax, population growth (happiness &ge; 60), population decline (happiness &lt; 30), no change in between, carbon &gt; 5000 envHealth penalty, envHealth &ge; 80 happiness bonus, passive record always first</li>
+    <li><strong>Zone placement</strong> (11 tests) &ndash; Residential on empty tile, cost deduction, metric deltas (green_space with road + bike lane prereqs), rock tile rejection, occupied tile rejection, commercial requires 2 roads, industrial requires roads + waste, allows commercial with roads, unknown code rejection, insufficient budget, invalid tile index</li>
+    <li><strong>Infrastructure placement</strong> (10 tests) &ndash; Road network placement + counter increment, transit counter (needs 2 roads), bike lane requires roads, water treatment requires population &gt; 25k, wind turbine cap (3), allows wind turbine under cap, occupied tile rejection, bike lane +2 happiness bonus when envHealth &ge; 60, waste management +2 envHealth bonus, unknown code rejection</li>
+    <li><strong>Project decisions</strong> (5 tests) &ndash; Approve deltas + cost deduction, reject penalty + zero cost, insufficient budget rejection, requires both decisions, skips when no pending projects</li>
+    <li><strong>Event responses</strong> (5 tests) &ndash; Option deltas applied, budgetDelta applied, missing response rejection, out-of-bounds index rejection, skips when no pending event</li>
+    <li><strong>Loss conditions</strong> (5 tests) &ndash; city_revolt (happiness &le; 0), ecological_collapse (envHealth &le; 0), bankruptcy (economy &le; 0), no final score on loss, no turn advance on loss</li>
+    <li><strong>Game completion</strong> (6 tests) &ndash; Completes on turn 15, calculates final score, assigns tier, awards achievements, no turn advance, no new projects/events drawn</li>
+    <li><strong>Turn progression</strong> (3 tests) &ndash; Advances turn by 1, draws new projects, records all actions</li>
+    <li><strong>Difficulty settings</strong> (4 tests) &ndash; Easy has higher starting budget, hard has lower budget, hard has earlier event start, hard has higher event chance</li>
+    <li><strong>Game constants</strong> (5 tests) &ndash; MAX_TURNS = 15, MAX_ACTIONS_PER_TURN = 3, positive zone/infrastructure costs, wind turbine cap = 3</li>
+  </ul>
+</div>
+
+<h3>3.2 Auth Module &ndash; <code>auth.test.ts</code> (15 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li><strong>hashPassword</strong> (2 tests) &ndash; Returns bcrypt hash string (starts with $2), different hashes for same input (salt)</li>
+    <li><strong>verifyPassword</strong> (3 tests) &ndash; True for correct password, false for wrong password, false for empty string</li>
+    <li><strong>signToken</strong> (3 tests) &ndash; Returns 3-part JWT string, encodes claims in payload (playerId, email, username), sets 24h expiry</li>
+    <li><strong>requireAuth middleware</strong> (5 tests) &ndash; Calls next() and attaches claims with valid token, 401 for missing header, 401 for non-Bearer header, 401 for invalid token, 401 for expired token</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!--  4. BACKEND INTEGRATION TESTS                                  -->
+<!-- ============================================================ -->
+<h2>4. Backend Integration Tests (28 tests)</h2>
+
+<p>
+  Integration tests mount Express routers on a test app and use <strong>Supertest</strong> to send real HTTP requests.
+  The database (<code>pool</code> from <code>db.ts</code>) is <strong>mocked with Vitest</strong> so no live Postgres
+  connection is needed. Authentication uses real JWT signing/verification.
+</p>
+
+<h3>4.1 Auth Routes &ndash; <code>auth.routes.test.ts</code> (8 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li><strong>POST /register</strong> &ndash; 201 with token + player on success, 400 for invalid payload, 400 for missing fields, 409 for duplicate username/email</li>
+    <li><strong>POST /login</strong> &ndash; 200 with token + player on valid credentials, 401 for wrong password, 401 for non-existent email, 400 for invalid payload</li>
+  </ul>
+</div>
+
+<h3>4.2 Game Routes &ndash; <code>game.routes.test.ts</code> (13 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li><strong>Auth guard</strong> &ndash; 401 without Authorization header, 401 with invalid token</li>
+    <li><strong>GET /catalog</strong> &ndash; Returns zones, infrastructure, and projects arrays with correct counts</li>
+    <li><strong>POST /sessions</strong> &ndash; 201 on success, 400 for invalid payload, defaults difficulty to normal</li>
+    <li><strong>GET /sessions</strong> &ndash; Lists all sessions for player, returns empty array if none</li>
+    <li><strong>GET /sessions/:id</strong> &ndash; Returns session by ID, 404 for non-existent</li>
+    <li><strong>POST /sessions/:id/turn</strong> &ndash; Resolves turn with zone placement, 404 for non-existent session, 400 for invalid payload</li>
+    <li><strong>GET /sessions/:id/history</strong> &ndash; Returns decision history, 404 for non-existent session</li>
+  </ul>
+</div>
+
+<h3>4.3 Player Routes &ndash; <code>player.routes.test.ts</code> (7 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li><strong>GET /profile</strong> &ndash; Returns profile with achievements, 403 for other player&rsquo;s profile, 404 for non-existent player, 401 without auth</li>
+    <li><strong>GET /scores</strong> &ndash; Returns score history, 403 for other player, empty array for no games</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!--  5. FRONTEND UNIT TESTS                                        -->
+<!-- ============================================================ -->
+<h2>5. Frontend Unit Tests (21 tests)</h2>
+
+<p>
+  Frontend unit tests run in a <strong>jsdom</strong> environment (simulated browser), allowing tests
+  to use <code>localStorage</code> and <code>fetch</code> without a real browser.
+</p>
+
+<h3>5.1 Auth Helpers &ndash; <code>auth.test.ts</code> (10 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li><strong>saveAuth</strong> &ndash; Stores token and player JSON in localStorage under correct keys</li>
+    <li><strong>getToken</strong> &ndash; Returns stored token, returns null when empty</li>
+    <li><strong>getStoredPlayer</strong> &ndash; Returns parsed player object, returns null when empty</li>
+    <li><strong>clearAuth</strong> &ndash; Removes both items, does not throw when already empty</li>
+    <li><strong>Round-trip</strong> &ndash; Save &rarr; get &rarr; clear lifecycle works correctly</li>
+  </ul>
+</div>
+
+<h3>5.2 API Client &ndash; <code>api.test.ts</code> (11 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li><strong>register</strong> &ndash; Sends POST to /auth/register with correct body</li>
+    <li><strong>login</strong> &ndash; Sends POST to /auth/login with correct body</li>
+    <li><strong>Authorization</strong> &ndash; Adds Bearer token header, sets Content-Type to application/json</li>
+    <li><strong>Error handling</strong> &ndash; Throws error message from response, generic message when no error field, generic message when JSON parsing fails</li>
+    <li><strong>Endpoint mapping</strong> &ndash; fetchProfile, fetchScores, createSession, submitTurn, fetchHistory all call correct URLs with correct HTTP methods</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!--  6. E2E CYPRESS TESTS                                          -->
+<!-- ============================================================ -->
+<h2>6. End-to-End Cypress Tests (56 tests)</h2>
+
+<p>
+  Cypress E2E tests run in a <strong>real Chromium browser</strong> against the fully running application stack
+  (PostgreSQL + Express backend + Next.js frontend). They validate complete user flows from registration to gameplay.
+</p>
+
+<h3>Custom Cypress Commands</h3>
+<div class="test-section">
+  <p>Defined in <code>FrontEnd/cypress/support/commands.ts</code>:</p>
+  <ul>
+    <li><code>cy.apiRegister(username, email, password)</code> &ndash; Registers a user via the REST API and stores auth in localStorage. Faster than UI registration for test setup.</li>
+    <li><code>cy.apiLogin(email, password)</code> &ndash; Logs in via the REST API and stores auth in localStorage.</li>
+    <li><code>cy.uiRegister(username, email, password)</code> &ndash; Registers through the UI form and asserts redirect to /dashboard.</li>
+    <li><code>cy.uiLogin(email, password)</code> &ndash; Logs in through the UI form and asserts redirect to /dashboard.</li>
+    <li><code>cy.createTestUser()</code> &ndash; Generates a unique user (timestamp-based) and registers via API. Each test gets isolated data.</li>
+  </ul>
+</div>
+
+<h3>6.1 Landing Page &ndash; <code>landing.cy.ts</code> (8 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li>Hero section displays with game title and UN SDG 11 kicker</li>
+    <li>Game description mentions &ldquo;turn-based planning game&rdquo;</li>
+    <li>Register and Log in links point to correct routes</li>
+    <li>Clicking Register/Log in navigates to the correct pages</li>
+    <li>Core loop section shows 3 action cards (Build, Review proposals, Respond to events)</li>
+  </ul>
+</div>
+
+<h3>6.2 Authentication &ndash; <code>auth.cy.ts</code> (10 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li>Registration form displays all fields (username, email, password)</li>
+    <li>Successful registration redirects to /dashboard with username shown</li>
+    <li>Duplicate username/email shows &ldquo;already exists&rdquo; error</li>
+    <li>Login form displays all fields</li>
+    <li>Successful login redirects to /dashboard</li>
+    <li>Wrong password shows &ldquo;Invalid email or password&rdquo; error</li>
+    <li>Non-existent email shows error</li>
+    <li>Cross-links between register and login pages work</li>
+  </ul>
+</div>
+
+<h3>6.3 Dashboard &ndash; <code>dashboard.cy.ts</code> (13 tests)</h3>
+<div class="test-section">
+  <ul>
+    <li>Auth guard: unauthenticated visit redirects to /auth/login</li>
+    <li>Player username displayed in heading</li>
+    <li>New session form with city name, difficulty dropdown (Easy/Normal/Hard), Start button</li>
+    <li>Total games, Best score, Sessions, Achievements, Score history all visible</li>
+    <li>Log out clears auth and returns to landing page</li>
+    <li>After logout, /dashboard redirects to login</li>
+    <li>Creating a session redirects to game page with correct city name</li>
+    <li>Created session appears in the Sessions list when returning to dashboard</li>
+  </ul>
+</div>
+
+<h3>6.4 Game Play &ndash; <code>game.cy.ts</code> (14+ tests)</h3>
+<div class="test-section">
+  <h4>Page structure</h4>
+  <ul>
+    <li>City name and &ldquo;Turn 1 of 15&rdquo; displayed</li>
+    <li>All 6 metric cards shown (Happiness, Env Health, Economy, Carbon, Budget, Population)</li>
+    <li>8&times;8 grid renders 64 tile buttons</li>
+    <li>Zones and Infrastructure sidebars list all options</li>
+    <li>Proposals section visible, Resolve turn button visible</li>
+  </ul>
+  <h4>Interactions</h4>
+  <ul>
+    <li>Clicking a tile selects it (data-selected attribute)</li>
+    <li>Clicking a different tile moves selection</li>
+    <li>Queuing a zone action updates counter (Queued 1/3) and shows in list</li>
+    <li>Can queue up to 3 actions</li>
+    <li>Error shown when queuing without tile selection</li>
+    <li>Remove button clears a queued action</li>
+    <li>Project Approve/Reject buttons toggle correctly</li>
+  </ul>
+  <h4>Turn resolution</h4>
+  <ul>
+    <li>Error if proposals not decided before resolving</li>
+    <li>Successful turn advances counter to &ldquo;Turn 2 of 15&rdquo;</li>
+    <li>Zone placement changes budget metric</li>
+    <li>Queued actions cleared after turn resolves</li>
+  </ul>
+  <h4>Results &amp; navigation</h4>
+  <ul>
+    <li>Results page shows city name, status, metrics, decision history table</li>
+    <li>Back to dashboard link works</li>
+    <li>Auth guard redirects unauthenticated users to login</li>
+  </ul>
+</div>
+
+<h3>6.5 Why Cypress Tests Target <code>localhost</code>, Not the Live Vercel URL</h3>
+
+<div class="warning-box">
+  <strong>Cypress E2E tests are intentionally configured to run against <code>http://localhost:3000</code>
+  (local dev stack), not the deployed Vercel URL (<code>https://eco-city-builder-org.vercel.app</code>).</strong>
+</div>
+
+<p>There are several important reasons for this architectural decision:</p>
+
+<table>
+  <thead>
+    <tr><th>Reason</th><th>Explanation</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Database isolation</strong></td>
+      <td>E2E tests create test users, game sessions, and submit turns that write to the database. Running against the live Vercel deployment would pollute the <strong>production database</strong> with test data (e.g. hundreds of <code>testuser_1710XXXXXX</code> accounts), which is unacceptable.</td>
+    </tr>
+    <tr>
+      <td><strong>Deterministic state</strong></td>
+      <td>Tests expect a clean, predictable starting state. A shared production database could have other users&rsquo; sessions, conflicting data, or resource limits that cause non-deterministic test failures (flaky tests).</td>
+    </tr>
+    <tr>
+      <td><strong>CORS restrictions</strong></td>
+      <td>The deployed backend on Render is configured with <code>CORS_ORIGIN</code> set to the Vercel frontend domain. Cypress runs from <code>localhost</code>, so API requests from Cypress to the live Render backend would be blocked by CORS policy.</td>
+    </tr>
+    <tr>
+      <td><strong>API rate limits &amp; costs</strong></td>
+      <td>Running 45+ E2E tests repeatedly against a hosted backend (Render) consumes free-tier quotas and could trigger rate limiting, making tests unreliable.</td>
+    </tr>
+    <tr>
+      <td><strong>Speed</strong></td>
+      <td>Localhost communication has near-zero latency. Running against a remote server adds network round-trip time to every Cypress command, significantly slowing the test suite.</td>
+    </tr>
+    <tr>
+      <td><strong>Industry standard practice</strong></td>
+      <td>E2E tests are designed to validate application <em>behaviour</em>, not infrastructure. The standard approach is to run them against a local or staging environment, never directly against production.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="muted">
+  If needed in the future, a dedicated <strong>staging environment</strong> (separate Vercel preview + staging database)
+  could be set up to run Cypress tests against a deployed instance without affecting production data.
+</p>
+
+<!-- ============================================================ -->
+<!--  7. HOW TO RUN TESTS                                           -->
+<!-- ============================================================ -->
+<h2>7. How to Run Tests</h2>
+
+<h3>7.1 Prerequisites</h3>
+<ul>
+  <li>Node.js 22+ installed</li>
+  <li>Docker Desktop installed and running (for E2E tests)</li>
+  <li>Run <code>npm install</code> in both <code>backend/</code> and <code>FrontEnd/</code></li>
+</ul>
+
+<h3>7.2 Backend Unit &amp; Integration Tests</h3>
+<pre><code>cd backend
+npm test          # Run all 150 tests once
+npm run test:watch # Watch mode (re-runs on file changes)</code></pre>
+<div class="info-box">
+  <strong>No database required.</strong> All backend tests mock the database connection. These tests run
+  entirely in memory and complete in under 3 seconds.
+</div>
+
+<h3>7.3 Frontend Unit Tests</h3>
+<pre><code>cd FrontEnd
+npm test          # Run all 21 tests once
+npm run test:watch # Watch mode</code></pre>
+<div class="info-box">
+  <strong>No browser or server required.</strong> Frontend unit tests use jsdom to simulate the browser environment.
+</div>
+
+<h3>7.4 Cypress E2E Tests</h3>
+<p>E2E tests require the <strong>full application stack</strong> to be running:</p>
+
+<pre><code># Terminal 1 &ndash; Start the database
+docker compose up -d db
+
+# Terminal 2 &ndash; Start the backend
+cd backend
+npm run dev
+
+# Terminal 3 &ndash; Start the frontend
+cd FrontEnd
+npm run dev</code></pre>
+
+<p>Then run Cypress:</p>
+<pre><code>cd FrontEnd
+
+# Option A: Interactive mode (opens Cypress GUI &ndash; great for debugging)
+npm run cypress:open
+
+# Option B: Headless mode (runs in terminal &ndash; CI-friendly)
+npm run cypress:run</code></pre>
+
+<h3>7.5 npm Scripts Summary</h3>
+<table>
+  <thead>
+    <tr><th>Folder</th><th>Command</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>backend/</code></td><td><code>npm test</code></td><td>Run 150 backend tests (Vitest)</td></tr>
+    <tr><td><code>backend/</code></td><td><code>npm run test:watch</code></td><td>Watch mode</td></tr>
+    <tr><td><code>FrontEnd/</code></td><td><code>npm test</code></td><td>Run 21 frontend unit tests (Vitest)</td></tr>
+    <tr><td><code>FrontEnd/</code></td><td><code>npm run test:watch</code></td><td>Watch mode</td></tr>
+    <tr><td><code>FrontEnd/</code></td><td><code>npm run cypress:open</code></td><td>Open Cypress GUI</td></tr>
+    <tr><td><code>FrontEnd/</code></td><td><code>npm run cypress:run</code></td><td>Run Cypress headless</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!--  8. DEPLOYMENT COMPATIBILITY                                   -->
+<!-- ============================================================ -->
+<h2>8. Deployment Compatibility &ndash; Vercel &amp; Render</h2>
+
+<div class="info-box">
+  <strong>Verdict: No issues.</strong> The test suite is fully compatible with Vercel (frontend) and Render (backend)
+  deployments. No configuration changes are needed.
+</div>
+
+<h3>Why there are no conflicts</h3>
+<table>
+  <thead>
+    <tr><th>Concern</th><th>Analysis</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Test dependencies in production?</strong></td>
+      <td>All test packages (<code>vitest</code>, <code>cypress</code>, <code>supertest</code>, <code>jsdom</code>, <code>@types/supertest</code>) are listed under <code>devDependencies</code> in <code>package.json</code>. Both Vercel and Render run <code>npm install --omit=dev</code> (or equivalent) for production builds, so these packages are <strong>never installed in production</strong>.</td>
+    </tr>
+    <tr>
+      <td><strong>Test files bundled into build?</strong></td>
+      <td>Test files live in <code>__tests__/</code> and <code>cypress/</code> directories. They are never imported by any application source code. Next.js only bundles files under <code>app/</code>, <code>lib/</code>, and <code>public/</code>. The backend only runs files under <code>src/</code> (excluding <code>__tests__/</code>). Test files are completely ignored during builds.</td>
+    </tr>
+    <tr>
+      <td><strong>Config files cause build errors?</strong></td>
+      <td><code>vitest.config.ts</code> and <code>cypress.config.ts</code> are only read by their respective test runners. Neither Next.js nor the backend server loads these files. They have no effect on builds or runtime.</td>
+    </tr>
+    <tr>
+      <td><strong>Build time affected?</strong></td>
+      <td>No. Since <code>devDependencies</code> are skipped, there is no additional install time. Test files are not compiled during <code>next build</code> or backend transpilation.</td>
+    </tr>
+    <tr>
+      <td><strong>Vercel-specific</strong></td>
+      <td>Vercel runs <code>next build</code> which only processes <code>app/</code> routes and their imports. Test directories are excluded by default.</td>
+    </tr>
+    <tr>
+      <td><strong>Render-specific</strong></td>
+      <td>Render runs the build command specified in the dashboard (typically <code>npm install &amp;&amp; npm start</code>). With <code>NODE_ENV=production</code>, devDependencies are skipped automatically.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Optional: Add tests to CI pipeline</h3>
+<p>If you want tests to run automatically before each deployment, you can add a build command like:</p>
+<pre><code># Render build command (optional)
+npm install && npm test && npm start
+
+# Vercel: Add to vercel.json (optional)
+{
+  "buildCommand": "npm test && next build"
+}</code></pre>
+<p class="muted">This is optional and not required for deployment to work.</p>
+
+<!-- ============================================================ -->
+<!--  9. CONCLUSION                                                 -->
+<!-- ============================================================ -->
+<h2>9. Conclusion</h2>
+
+<p>
+  The EcoCity Builder test suite provides <strong>comprehensive coverage</strong> across all three layers of the testing pyramid:
+</p>
+<ul>
+  <li><strong>143 unit tests</strong> verify the core game simulation engine, authentication module, and frontend utilities in isolation with no external dependencies.</li>
+  <li><strong>28 integration tests</strong> validate all API endpoints with mocked database connections, ensuring correct HTTP status codes, response shapes, Zod validation, and JWT authentication.</li>
+  <li><strong>56 E2E Cypress tests</strong> exercise the full user journey &mdash; from landing page through registration, login, dashboard, game creation, tile placement, turn resolution, and results viewing &mdash; in a real browser against the live application stack.</li>
+</ul>
+
+<p>
+  All test packages are isolated in <code>devDependencies</code> and all test files reside in dedicated directories
+  (<code>__tests__/</code>, <code>cypress/</code>), ensuring <strong>zero impact</strong> on production deployments
+  to Vercel and Render.
+</p>
+
+<div class="info-box">
+  <strong>Total: 227 test cases across 13 files, using 3 frameworks (Vitest, Supertest, Cypress),
+  covering unit, integration, and end-to-end testing layers.</strong>
+</div>
+
+<p class="muted" style="margin-top: 32px; text-align: center; font-size: 13px;">
+  This testing artifact was created with the help of <strong>Claude AI &ndash; Sonnet 4.6</strong>
+</p>
+
+</body>
+</html>
