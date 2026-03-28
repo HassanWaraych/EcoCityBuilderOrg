@@ -16,8 +16,8 @@ const useSsl =
 export const pool = new pg.Pool({
   connectionString,
   ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+  family: 4, // <-- force IPv4
 });
-
 /**
  * Get a client from the pool. Use for single queries or pass to repos.
  * Remember to release the client when done (client.release() or use in a callback).
