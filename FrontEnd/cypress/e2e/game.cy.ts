@@ -130,6 +130,7 @@ describe("Game Play", () => {
   /* ------------------------------------------------------------------ */
   describe("project decisions", () => {
     it("highlights Approve button when clicked", () => {
+      cy.get(".city-grid .tile-button").eq(5).click();
       cy.get(".proposal-card").first().within(() => {
         cy.contains("button", "Approve").click();
         cy.contains("button", "Approve").should("have.class", "btn");
@@ -174,7 +175,7 @@ describe("Game Play", () => {
 
       cy.get(".proposal-card").each(($card) => {
         cy.wrap($card).within(() => {
-          cy.contains("button", "Approve").click();
+          cy.contains("button", "Reject").click();
         });
       });
 

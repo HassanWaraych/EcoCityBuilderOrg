@@ -289,7 +289,7 @@
   </tbody>
 </table>
 
-<h3>Frontend &ndash; Cypress E2E Tests (~45 tests)</h3>
+<h3>Frontend &ndash; Cypress E2E Tests (56 tests)</h3>
 <table>
   <thead>
     <tr><th>File</th><th class="num">Tests</th><th>Description</th></tr>
@@ -366,9 +366,9 @@
   <ul>
     <li><strong>Session validation</strong> (5 tests) &ndash; Rejects non-active/lost sessions, rejects &gt;3 actions, accepts exactly 3, allows 0 actions (skip turn)</li>
     <li><strong>Passive turn effects</strong> (7 tests) &ndash; Base budget grant + tax, population growth (happiness &ge; 60), population decline (happiness &lt; 30), no change in between, carbon &gt; 5000 envHealth penalty, envHealth &ge; 80 happiness bonus, passive record always first</li>
-    <li><strong>Zone placement</strong> (11 tests) &ndash; Residential on empty tile, cost deduction, metric deltas (green_space with road + bike lane prereqs), rock tile rejection, occupied tile rejection, commercial requires 2 roads, industrial requires roads + waste, allows commercial with roads, unknown code rejection, insufficient budget, invalid tile index</li>
-    <li><strong>Infrastructure placement</strong> (10 tests) &ndash; Road network placement + counter increment, transit counter (needs 2 roads), bike lane requires roads, water treatment requires population &gt; 25k, wind turbine cap (3), allows wind turbine under cap, occupied tile rejection, bike lane +2 happiness bonus when envHealth &ge; 60, waste management +2 envHealth bonus, unknown code rejection</li>
-    <li><strong>Project decisions</strong> (5 tests) &ndash; Approve deltas + cost deduction, reject penalty + zero cost, insufficient budget rejection, requires both decisions, skips when no pending projects</li>
+    <li><strong>Zone placement</strong> (11 tests) &ndash; Residential on empty tile, cost deduction, metric deltas (green_space with nearby road + residential prereqs), rock tile rejection, occupied tile rejection, commercial requires 2 nearby roads, industrial requires nearby roads + waste, allows commercial with nearby roads, unknown code rejection, insufficient budget, invalid tile index</li>
+    <li><strong>Infrastructure placement</strong> (10 tests) &ndash; Road network placement + counter increment, transit counter (needs nearby roads + commercial), bike lane requires nearby road within 1 tile, water treatment requires population &gt; 25k, wind turbine cap (3, needs nearby road + green space), allows wind turbine under cap with requirements met, occupied tile rejection, bike lane +2 happiness bonus when envHealth &ge; 60, waste management +2 envHealth bonus (needs nearby road + industrial), unknown code rejection</li>
+    <li><strong>Project decisions</strong> (5 tests) &ndash; Approve deltas + cost deduction (with tile placement), reject penalty + zero cost, insufficient budget rejection, requires both decisions, skips when no pending projects</li>
     <li><strong>Event responses</strong> (5 tests) &ndash; Option deltas applied, budgetDelta applied, missing response rejection, out-of-bounds index rejection, skips when no pending event</li>
     <li><strong>Loss conditions</strong> (5 tests) &ndash; city_revolt (happiness &le; 0), ecological_collapse (envHealth &le; 0), bankruptcy (economy &le; 0), no final score on loss, no turn advance on loss</li>
     <li><strong>Game completion</strong> (6 tests) &ndash; Completes on turn 15, calculates final score, assigns tier, awards achievements, no turn advance, no new projects/events drawn</li>
@@ -493,7 +493,7 @@
   </ul>
 </div>
 
-<h3>6.2 Authentication &ndash; <code>auth.cy.ts</code> (10 tests)</h3>
+<h3>6.2 Authentication &ndash; <code>auth.cy.ts</code> (9 tests)</h3>
 <div class="test-section">
   <ul>
     <li>Registration form displays all fields (username, email, password)</li>
@@ -521,7 +521,7 @@
   </ul>
 </div>
 
-<h3>6.4 Game Play &ndash; <code>game.cy.ts</code> (14+ tests)</h3>
+<h3>6.4 Game Play &ndash; <code>game.cy.ts</code> (26 tests)</h3>
 <div class="test-section">
   <h4>Page structure</h4>
   <ul>
@@ -539,7 +539,7 @@
     <li>Can queue up to 3 actions</li>
     <li>Error shown when queuing without tile selection</li>
     <li>Remove button clears a queued action</li>
-    <li>Project Approve/Reject buttons toggle correctly</li>
+    <li>Project Approve (requires tile selection) / Reject buttons toggle correctly</li>
   </ul>
   <h4>Turn resolution</h4>
   <ul>

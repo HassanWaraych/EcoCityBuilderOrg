@@ -39,6 +39,7 @@ function createSession(overrides: Partial<SessionRecord> = {}): SessionRecord {
     state: buildInitialState(),
     pendingProjects: [],
     pendingEvent: null,
+    achievements: [],
     startedAt: new Date().toISOString(),
     completedAt: null,
     ...overrides,
@@ -585,14 +586,15 @@ describe("resolveTurn – zone placement", () => {
     expect(result.metrics.budget).toBe(160000 + passiveGrant - ZONES.residential.cost);
   });
 
-  it("applies zone metric deltas (green_space requires roads + bike lanes)", () => {
-    const state = stateWithRoads(1);
-    state.bikeLanesBuilt = 1;
-    state.tiles[3][0].infrastructure = "bike_lane";
+  it("applies zone metric deltas (green_space requires road + residential)", () => {
+    const state = buildInitialState();
+    state.tiles[3][0].infrastructure = "road_network";
+    state.roadsBuilt = 1;
+    state.tiles[4][1].zone = "residential";
     const session = createSession({ state, happiness: 50, envHealth: 70, economy: 50 });
     const result = resolveTurn(
       session,
-      [{ category: "zone", code: "green_space", tileIndex: 25 }], // row 3, col 1 -> empty plain tile
+      [{ category: "zone", code: "green_space", tileIndex: 25 }], // row 3, col 1
       [],
       undefined,
     );
@@ -635,7 +637,7 @@ describe("resolveTurn – zone placement", () => {
         [],
         undefined,
       ),
-    ).toThrow(/needs 2 road network/);
+    ).toThrow(/needs 2 nearby road tile/);
   });
 
   it("rejects industrial zone without roads + waste management", () => {
@@ -647,7 +649,7 @@ describe("resolveTurn – zone placement", () => {
         [],
         undefined,
       ),
-    ).toThrow(/needs 2 road network/);
+    ).toThrow(/needs 2 nearby road tile/);
   });
 
   it("allows commercial zone when 2 roads are built", () => {
@@ -715,8 +717,12 @@ describe("resolveTurn – infrastructure placement", () => {
     expect(result.state.roadsBuilt).toBe(1);
   });
 
-  it("increments the correct infrastructure counter (transit needs 2 roads)", () => {
-    const state = stateWithRoads(2);
+  it("increments the correct infrastructure counter (transit needs roads + commercial)", () => {
+    const state = buildInitialState();
+    state.tiles[1][0].infrastructure = "road_network";
+    state.tiles[1][1].infrastructure = "road_network";
+    state.roadsBuilt = 2;
+    state.tiles[2][1].zone = "commercial";
     const session = createSession({ state, budget: 500000 });
     const result = resolveTurn(
       session,
@@ -736,7 +742,7 @@ describe("resolveTurn – infrastructure placement", () => {
         [],
         undefined,
       ),
-    ).toThrow(/needs 1 road network/);
+    ).toThrow(/needs 1 nearby road tile/);
   });
 
   it("rejects water treatment when population <= 25000", () => {
@@ -753,7 +759,10 @@ describe("resolveTurn – infrastructure placement", () => {
   });
 
   it("rejects wind turbine when cap of 3 is reached", () => {
-    const state = stateWithRoads(1);
+    const state = buildInitialState();
+    state.tiles[1][0].infrastructure = "road_network";
+    state.roadsBuilt = 1;
+    state.tiles[2][1].zone = "green_space";
     state.windTurbinesBuilt = 3;
     const session = createSession({ state, budget: 500000 });
     expect(() =>
@@ -766,8 +775,11 @@ describe("resolveTurn – infrastructure placement", () => {
     ).toThrow("Wind turbine cap reached");
   });
 
-  it("allows wind turbine when count < 3 and roads exist", () => {
-    const state = stateWithRoads(1);
+  it("allows wind turbine when count < 3 and requirements met", () => {
+    const state = buildInitialState();
+    state.tiles[1][0].infrastructure = "road_network";
+    state.roadsBuilt = 1;
+    state.tiles[2][1].zone = "green_space";
     state.windTurbinesBuilt = 2;
     const session = createSession({ state, budget: 500000 });
     const result = resolveTurn(
@@ -780,13 +792,14 @@ describe("resolveTurn – infrastructure placement", () => {
   });
 
   it("rejects placement on a tile with existing infrastructure", () => {
-    const state = stateWithRoads(2);
-    // tile [0][0] already has road_network from stateWithRoads
+    const state = buildInitialState();
+    state.tiles[0][0].infrastructure = "road_network";
+    state.roadsBuilt = 1;
     const session = createSession({ state, budget: 500000 });
     expect(() =>
       resolveTurn(
         session,
-        [{ category: "infrastructure", code: "public_transit", tileIndex: 0 }],
+        [{ category: "infrastructure", code: "road_network", tileIndex: 0 }],
         [],
         undefined,
       ),
@@ -794,7 +807,9 @@ describe("resolveTurn – infrastructure placement", () => {
   });
 
   it("grants +2 happiness bonus for bike lane when envHealth >= 60", () => {
-    const state = stateWithRoads(1);
+    const state = buildInitialState();
+    state.tiles[1][0].infrastructure = "road_network";
+    state.roadsBuilt = 1;
     const session = createSession({ state, envHealth: 80, happiness: 50 });
     const result = resolveTurn(
       session,
@@ -808,7 +823,10 @@ describe("resolveTurn – infrastructure placement", () => {
   });
 
   it("grants +2 envHealth bonus for waste management", () => {
-    const state = stateWithRoads(1);
+    const state = buildInitialState();
+    state.tiles[1][0].infrastructure = "road_network";
+    state.roadsBuilt = 1;
+    state.tiles[2][1].zone = "industrial";
     const session = createSession({ state, envHealth: 70 });
     const result = resolveTurn(
       session,
@@ -846,8 +864,8 @@ describe("resolveTurn – project decisions", () => {
       session,
       [],
       [
-        { code: PROJECTS[0].code, decision: "approve" },
-        { code: PROJECTS[1].code, decision: "approve" },
+        { code: PROJECTS[0].code, decision: "approve", tileIndex: 2 },
+        { code: PROJECTS[1].code, decision: "approve", tileIndex: 3 },
       ],
       undefined,
     );
@@ -988,13 +1006,16 @@ describe("resolveTurn – loss conditions", () => {
   });
 
   it("triggers ecological_collapse when envHealth reaches 0", () => {
-    const state = stateWithRoads(2);
+    const state = buildInitialState();
+    state.tiles[3][0].infrastructure = "road_network";
+    state.tiles[4][1].infrastructure = "road_network";
+    state.roadsBuilt = 2;
+    state.tiles[3][2].infrastructure = "waste_management";
     state.wasteManagementBuilt = 1;
-    state.tiles[3][0].infrastructure = "waste_management";
     const session = createSession({ state, envHealth: 3, happiness: 50, economy: 50, budget: 500000 });
     const result = resolveTurn(
       session,
-      [{ category: "zone", code: "industrial", tileIndex: 25 }], // row 3, col 1 -> empty
+      [{ category: "zone", code: "industrial", tileIndex: 25 }], // row 3, col 1
       [],
       undefined,
     );
@@ -1023,13 +1044,16 @@ describe("resolveTurn – loss conditions", () => {
   });
 
   it("does not calculate final score on loss", () => {
-    const state = stateWithRoads(2);
+    const state = buildInitialState();
+    state.tiles[3][0].infrastructure = "road_network";
+    state.tiles[4][1].infrastructure = "road_network";
+    state.roadsBuilt = 2;
+    state.tiles[3][2].infrastructure = "waste_management";
     state.wasteManagementBuilt = 1;
-    state.tiles[3][0].infrastructure = "waste_management";
     const session = createSession({ state, envHealth: 3, happiness: 50, economy: 50, budget: 500000 });
     const result = resolveTurn(
       session,
-      [{ category: "zone", code: "industrial", tileIndex: 25 }], // row 3, col 1 -> empty
+      [{ category: "zone", code: "industrial", tileIndex: 25 }], // row 3, col 1
       [],
       undefined,
     );
@@ -1039,13 +1063,16 @@ describe("resolveTurn – loss conditions", () => {
   });
 
   it("does not advance the turn number on loss", () => {
-    const state = stateWithRoads(2);
+    const state = buildInitialState();
+    state.tiles[3][0].infrastructure = "road_network";
+    state.tiles[4][1].infrastructure = "road_network";
+    state.roadsBuilt = 2;
+    state.tiles[3][2].infrastructure = "waste_management";
     state.wasteManagementBuilt = 1;
-    state.tiles[3][0].infrastructure = "waste_management";
     const session = createSession({ state, envHealth: 3, happiness: 50, economy: 50, budget: 500000, currentTurn: 5 });
     const result = resolveTurn(
       session,
-      [{ category: "zone", code: "industrial", tileIndex: 25 }], // row 3, col 1 -> empty
+      [{ category: "zone", code: "industrial", tileIndex: 25 }], // row 3, col 1
       [],
       undefined,
     );
